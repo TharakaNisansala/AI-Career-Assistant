@@ -1,32 +1,73 @@
 # User Flow
 
-## New User Flow
+## Overview
 
-1. User opens application
-2. Creates account
-3. Logs into system
-4. Uploads resume
-5. Adds target job description
-6. Starts AI analysis
-7. Receives ATS score
-8. Views improvement suggestions
-9. Saves analysis results
+This document describes how users interact with the AI Career Assistant Platform.
 
 
 
+# New User Flow
 
-## AI Analysis Flow
+1. User visits the platform.
+2. User creates an account.
+3. User logs into the system.
+4. User accesses the dashboard.
+5. User uploads a resume.
+6. User provides a target job description.
+7. User starts AI analysis.
+8. AI processes the resume.
+9. System generates analysis results.
+10. User views recommendations.
+11. User saves the analysis history.
 
-    Resume Upload
-        ↓
-    Extract Text
-        ↓
-    Process Resume Information
-        ↓
+
+
+# Resume Analysis Flow
+
+    User Uploads Resume
+            ↓
+    System Validates File
+            ↓
+    Extract Text From Resume
+            ↓
+    Process Resume Content
+            ↓
     Send Data To AI Model
-        ↓
+            ↓
     Generate Analysis
-        ↓
+            ↓
     Store Results
-        ↓
-    Display Dashboard
+            ↓
+    Display Results To User
+
+
+
+# Job Matching Flow
+
+    User Adds Job Description
+            ↓
+    System Extracts Job Requirements
+            ↓
+    Compare Resume Skills
+            ↓
+    Calculate Match Percentage
+            ↓
+    Identify Missing Skills
+            ↓
+    Generate Recommendations
+            ↓
+    Display Results
+
+
+
+# Interview Preparation Flow
+
+    User Requests Interview Questions
+            ↓
+    AI Generates Questions
+            ↓
+    User Provides Answers
+            ↓
+    AI Evaluates Answers
+            ↓
+    Provides Feedback
