@@ -2,112 +2,162 @@
 
 ## 1. Overview
 
-The AI Career Assistant Platform follows a modern full-stack architecture consisting of multiple layers including frontend, backend, AI processing, and database layers.
+The AI Career Assistant Platform follows a modern full-stack architecture designed to integrate frontend services, backend APIs, artificial intelligence processing, and data storage components.
 
-The architecture is designed to provide scalability, maintainability, and efficient integration with Artificial Intelligence services.
+The architecture focuses on scalability, maintainability, security, and efficient AI-powered career analysis.
 
 
+# 2. Architecture Components
 
-# 2. High-Level Architecture
-
-The system consists of the following major components:
+The system consists of four major layers:
 
 1. Presentation Layer (Frontend)
-2. Application Layer (Backend API)
+2. Application Layer (Backend)
 3. AI Processing Layer
 4. Data Storage Layer
 
-## Frontend Layer
 
-Technology:
+
+# 3. Presentation Layer (Frontend)
+
+## Technology Stack
 
 - React
 - TypeScript
 - Tailwind CSS
 
-Responsibilities:
+## Responsibilities
 
-- Provide user interface
-- Handle user interactions
-- Upload resumes
+The frontend layer provides the user interface and handles user interactions.
+
+Main responsibilities:
+
+- User registration and login interface
+- Resume upload interface
+- Job description input
 - Display AI analysis results
-- Visualize career recommendations
+- Display ATS scores
+- Display career recommendations
+- Dashboard visualization
 
-## Backend Layer
 
-Technology:
+
+# 4. Application Layer (Backend)
+
+## Technology Stack
 
 - Node.js
 - Express.js
 
-Responsibilities:
+## Responsibilities
+
+The backend layer manages application logic and communication between frontend, AI services, and databases.
+
+Main responsibilities:
 
 - Handle API requests
-- Manage authentication
-- Process uploaded files
+- Manage user authentication
+- Process uploaded resume files
 - Communicate with AI services
-- Manage database operations
+- Manage business logic
+- Store and retrieve application data
 
-## AI Processing Layer
 
-Technology:
+
+# 5. AI Processing Layer
+
+## Technology Stack
 
 - Large Language Models (LLMs)
 - OpenAI API / Ollama
 
-Responsibilities:
+## Responsibilities
 
-- Resume understanding
+The AI processing layer provides intelligent analysis capabilities.
+
+Main responsibilities:
+
+- Resume content understanding
 - Skill extraction
+- Experience analysis
 - ATS score generation
 - Job matching
+- Skill gap identification
 - Career recommendations
 - Interview question generation
 
 
-## Database Layer
 
-Technology:
+# 6. Data Storage Layer
 
-- PostgreSQL (Supabase)
+## Technology Stack
 
-Responsibilities:
+- PostgreSQL
+- Supabase
 
-Store:
+## Responsibilities
 
-- User information
-- Resume details
+The database layer stores and manages application data.
+
+Stored information:
+
+- User accounts
+- Resume information
 - Job descriptions
 - Analysis results
 - User history
 
 
-# Technology Stack
+
+# 7. Technology Stack
 
 | Layer | Technology |
 |---|---|
 | Frontend | React, TypeScript, Tailwind CSS |
 | Backend | Node.js, Express.js |
 | Database | PostgreSQL, Supabase |
-| AI | LLM, OpenAI API, Ollama |
+| AI Layer | LLM, OpenAI API, Ollama |
 | File Processing | PDF Parser, DOCX Parser |
 | Version Control | Git, GitHub |
 
 
-# Data Flow
-
-1. User uploads a resume through the frontend application.
-
-2. Frontend sends resume data to the backend API.
-
-3. Backend processes the uploaded file and extracts text.
-
-4. Extracted resume information is sent to the AI processing layer.
-
-5. AI model analyzes the resume and generates insights.
-
-6. Results are stored in the database.
-
-7. Frontend retrieves and displays analysis results to the user.
 
 
+# 8. System Data Flow
+
+The overall system data flow:
+
+1. User uploads a resume through the frontend.
+
+2. Frontend sends resume data to backend APIs.
+
+3. Backend validates and processes uploaded files.
+
+4. Resume text is extracted from uploaded documents.
+
+5. Extracted information is sent to the AI processing layer.
+
+6. AI analyzes resume content and generates insights.
+
+7. Analysis results are stored in the database.
+
+8. Frontend retrieves and displays results to the user.
+
+
+
+
+# 9. Architecture Diagram
+
+![System Architecture](images/application-architecture-flow.png)
+
+
+
+# 10. Future Scalability
+
+The architecture supports future improvements such as:
+
+- Cloud-based AI services
+- Multiple AI model integration
+- Advanced recommendation engines
+- Automated job searching
+- Mobile application support
