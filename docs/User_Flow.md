@@ -6,7 +6,7 @@ This document describes how users interact with the AI Career Assistant Platform
 
 
 
-# New User Flow
+## New User Flow
 
 1. User visits the platform.
 2. User creates an account.
@@ -22,8 +22,8 @@ This document describes how users interact with the AI Career Assistant Platform
 
 
 
-# Resume Analysis Flow
-
+## Resume Analysis Flow
+```
     User Uploads Resume
             ↓
     System Validates File
@@ -39,11 +39,11 @@ This document describes how users interact with the AI Career Assistant Platform
     Store Results
             ↓
     Display Results To User
+```
 
 
-
-# Job Matching Flow
-
+## Job Matching Flow
+```
     User Adds Job Description
             ↓
     System Extracts Job Requirements
@@ -57,11 +57,11 @@ This document describes how users interact with the AI Career Assistant Platform
     Generate Recommendations
             ↓
     Display Results
+```
 
 
-
-# Interview Preparation Flow
-
+## Interview Preparation Flow
+```
     User Requests Interview Questions
             ↓
     AI Generates Questions
@@ -71,3 +71,53 @@ This document describes how users interact with the AI Career Assistant Platform
     AI Evaluates Answers
             ↓
     Provides Feedback
+```
+
+## User Roles
+
+## Job Seeker
+
+The main user of the system.
+
+Responsibilities:
+
+- Create an account
+- Upload resumes
+- Add job descriptions
+- View AI analysis results
+- Receive career recommendations
+- Prepare for interviews
+
+
+## AI System
+
+The AI engine processes user data and provides intelligent recommendations.
+
+Responsibilities:
+
+- Extract resume information
+- Analyze skills
+- Generate ATS score
+- Identify skill gaps
+- Generate interview questions
+
+## Diagrams
+
+## Overall User Flow
+
+![User Flow](images/user-flow.png)
+
+
+## AI Processing Flow
+
+![AI Processing Flow](images/ai-processing-flow.png)
+
+
+## Future User Flow Improvements
+
+Future versions may include:
+
+- AI resume builder
+- LinkedIn profile analysis
+- Automated job recommendations
+- AI mock interviews
