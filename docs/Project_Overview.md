@@ -53,3 +53,25 @@ The system will allow users to upload their resumes, analyze them using AI, comp
 ## Expected Outcome
 
 A complete AI-powered career assistant platform that helps users optimize their resumes and improve their career opportunities.
+
+## Technology Overview
+
+The system will be developed using modern full-stack and AI technologies.
+
+Frontend:
+- React
+- TypeScript
+- Tailwind CSS
+
+Backend:
+- Node.js
+- Express.js
+
+Database:
+- PostgreSQL (Supabase)
+
+AI Technologies:
+- Large Language Models (LLMs)
+- OpenAI API / Ollama
+
+The selected technologies provide scalability, maintainability, and support for AI-powered application development.
