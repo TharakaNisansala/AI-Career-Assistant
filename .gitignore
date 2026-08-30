@@ -22,3 +22,6 @@ Thumbs.db
 
 # Temporary files
 *.tmp
+
+# Uploaded user files (Day 11 local resume storage)
+server/uploads/
