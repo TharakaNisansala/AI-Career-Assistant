@@ -1,4 +1,6 @@
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function validateRegisterInput({ name, email, password }) {
   const errors = [];
@@ -32,4 +34,8 @@ function validateLoginInput({ email, password }) {
   return errors;
 }
 
-module.exports = { validateRegisterInput, validateLoginInput };
+function isValidUUID(value) {
+  return typeof value === "string" && UUID_REGEX.test(value);
+}
+
+module.exports = { validateRegisterInput, validateLoginInput, isValidUUID };
