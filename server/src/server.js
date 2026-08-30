@@ -16,9 +16,35 @@ app.use("/api/v1", authRoutes);
 
 const PORT = process.env.PORT || 5000;
 
+const STARTUP_DB_CHECK_RETRIES = 2;
+const STARTUP_DB_CHECK_BACKOFF_MS = 1000;
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function checkDatabaseConnectionWithRetry() {
+  for (let attempt = 0; attempt <= STARTUP_DB_CHECK_RETRIES; attempt++) {
+    try {
+      return await checkDatabaseConnection();
+    } catch (error) {
+      if (attempt === STARTUP_DB_CHECK_RETRIES) {
+        throw error;
+      }
+      console.warn(
+        `Database connectivity check failed (attempt ${attempt + 1}/${
+          STARTUP_DB_CHECK_RETRIES + 1
+        }), retrying:`,
+        error.message
+      );
+      await sleep(STARTUP_DB_CHECK_BACKOFF_MS * (attempt + 1));
+    }
+  }
+}
+
 async function startServer() {
   try {
-    await checkDatabaseConnection();
+    await checkDatabaseConnectionWithRetry();
     console.log("Database connection verified");
   } catch (error) {
     console.error(
