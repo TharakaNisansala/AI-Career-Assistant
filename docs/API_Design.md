@@ -67,24 +67,38 @@ Response:
     }
 
 # 4. Resume APIs
+All resume endpoints require a JWT `Authorization: Bearer <token>` header
+(see section 3) and only ever read or modify resumes owned by that token's
+user; there is no `userId` field in any request body or form data.
+
 Upload Resume
 
 Endpoint
 POST /api/v1/resumes/upload
 
 Purpose
-Upload user resume for analysis.
+Upload a resume file (PDF or DOCX, max 5MB by default) for the
+authenticated user.
 
 Request:
 Form Data:
-file: resume.pdf
-userId: 12345
+resume: resume.pdf
 
-Response:
+Response (201):
     {
-    "message": "Resume uploaded",
-    "resumeId": "resume001"
+    "status": "success",
+    "message": "Resume uploaded successfully",
+    "resume": {
+      "resumeId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "fileName": "resume.pdf",
+      "fileSize": 82345,
+      "mimeType": "application/pdf",
+      "uploadedAt": "2026-08-30T12:00:00.000Z"
     }
+    }
+
+Error responses: 400 (missing file, unsupported file type), 413 (file
+too large), 401 (missing/invalid token).
 
 Get User Resumes
 
@@ -92,15 +106,21 @@ Endpoint
 GET /api/v1/resumes
 
 Purpose:
-Retrieve uploaded resumes.
+Retrieve the authenticated user's own uploaded resumes.
 
-Response:
-    [
+Response (200):
     {
-    "resumeId":"001",
-    "fileName":"resume.pdf"
-    }
+    "status": "success",
+    "resumes": [
+      {
+        "resumeId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        "fileName": "resume.pdf",
+        "fileSize": 82345,
+        "mimeType": "application/pdf",
+        "uploadedAt": "2026-08-30T12:00:00.000Z"
+      }
     ]
+    }
 
 Delete Resume
 
@@ -108,7 +128,16 @@ Endpoint
 DELETE /api/v1/resumes/{resumeId}
 
 Purpose:
-Delete uploaded resume.
+Delete a resume owned by the authenticated user.
+
+Response (200):
+    {
+    "status": "success",
+    "message": "Resume deleted successfully"
+    }
+
+Returns 404 for a resumeId that doesn't exist or that belongs to
+another user (the two cases are indistinguishable to the caller).
 
 
 # 5. AI Resume Analysis APIs
