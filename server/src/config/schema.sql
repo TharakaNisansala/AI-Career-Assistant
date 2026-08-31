@@ -50,3 +50,37 @@ CREATE TABLE IF NOT EXISTS resume_analyses (
 );
 
 CREATE INDEX IF NOT EXISTS idx_resume_analyses_resume_id ON resume_analyses(resume_id);
+
+-- Job descriptions table (docs/Database_Design.md section 4.3)
+CREATE TABLE IF NOT EXISTS job_descriptions (
+  job_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  title VARCHAR(255) NOT NULL,
+  description TEXT NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_job_descriptions_user_id ON job_descriptions(user_id);
+
+-- Job matches table
+-- match_percentage and score_breakdown are computed deterministically by the
+-- backend (see services/jobMatchScoring.service.js) from AI-extracted resume
+-- facts (reusing services/resumeAnalysis.service.js) and AI-extracted job
+-- requirements, not supplied directly by the AI. matched_skills/
+-- missing_skills/strengths/recommendations are likewise derived from that
+-- same deterministic breakdown.
+CREATE TABLE IF NOT EXISTS job_matches (
+  match_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  job_id UUID NOT NULL REFERENCES job_descriptions(job_id) ON DELETE CASCADE,
+  resume_id UUID NOT NULL REFERENCES resumes(resume_id) ON DELETE CASCADE,
+  match_percentage INTEGER NOT NULL CHECK (match_percentage >= 0 AND match_percentage <= 100),
+  score_breakdown JSONB NOT NULL,
+  matched_skills JSONB NOT NULL DEFAULT '[]'::jsonb,
+  missing_skills JSONB NOT NULL DEFAULT '[]'::jsonb,
+  strengths JSONB NOT NULL DEFAULT '[]'::jsonb,
+  recommendations JSONB NOT NULL DEFAULT '[]'::jsonb,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_job_matches_job_id ON job_matches(job_id);
+CREATE INDEX IF NOT EXISTS idx_job_matches_resume_id ON job_matches(resume_id);
