@@ -92,4 +92,4 @@ function validateAnalysisPayload(parsedContent) {
   return sanitized;
 }
 
-module.exports = { validateAnalysisPayload, AIResponseValidationError };
+module.exports = { validateAnalysisPayload, AIResponseValidationError, toStringArray };
