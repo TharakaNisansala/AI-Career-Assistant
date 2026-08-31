@@ -4,6 +4,15 @@ const {
   findResumeById,
   deleteResumeById,
 } = require("../services/resume.service");
+const {
+  extractResumeText,
+  ResumeFileMissingError,
+} = require("../services/resumeExtraction.service");
+const {
+  EmptyDocumentError,
+  CorruptedDocumentError,
+  UnsupportedMimeTypeError,
+} = require("../utils/textExtraction.utils");
 const { isValidUUID } = require("../utils/validators");
 
 function serializeResume(resume) {
@@ -44,6 +53,45 @@ async function listResumes(req, res) {
   }
 }
 
+async function getResumeText(req, res) {
+  const { resumeId } = req.params;
+
+  if (!isValidUUID(resumeId)) {
+    return res.status(400).json({ status: "error", message: "Invalid resume id" });
+  }
+
+  try {
+    const resume = await findResumeById(resumeId);
+
+    // Same not-found-vs-not-yours ambiguity as removeResume: both cases
+    // return 404 so callers can't distinguish them.
+    if (!resume || resume.user_id !== req.user.userId) {
+      return res.status(404).json({ status: "error", message: "Resume not found" });
+    }
+
+    const text = await extractResumeText(resume);
+    res.json({
+      status: "success",
+      resumeId: resume.resume_id,
+      text,
+      characterCount: text.length,
+    });
+  } catch (error) {
+    if (error instanceof EmptyDocumentError || error instanceof CorruptedDocumentError) {
+      return res.status(422).json({ status: "error", message: error.message });
+    }
+    if (error instanceof UnsupportedMimeTypeError) {
+      return res.status(415).json({ status: "error", message: error.message });
+    }
+    if (error instanceof ResumeFileMissingError) {
+      return res.status(404).json({ status: "error", message: error.message });
+    }
+
+    console.error("Resume text extraction failed:", error.message);
+    res.status(500).json({ status: "error", message: "Unable to extract resume text" });
+  }
+}
+
 async function removeResume(req, res) {
   const { resumeId } = req.params;
 
@@ -68,4 +116,4 @@ async function removeResume(req, res) {
   }
 }
 
-module.exports = { uploadResume, listResumes, removeResume };
+module.exports = { uploadResume, listResumes, getResumeText, removeResume };
