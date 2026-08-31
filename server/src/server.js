@@ -7,6 +7,7 @@ const healthRoutes = require("./routes/health.routes");
 const authRoutes = require("./routes/auth.routes");
 const resumeRoutes = require("./routes/resume.routes");
 const aiRoutes = require("./routes/ai.routes");
+const resumeAnalysisRoutes = require("./routes/resumeAnalysis.routes");
 
 const app = express();
 
@@ -17,6 +18,7 @@ app.use("/api/v1", healthRoutes);
 app.use("/api/v1", authRoutes);
 app.use("/api/v1", resumeRoutes);
 app.use("/api/v1", aiRoutes);
+app.use("/api/v1", resumeAnalysisRoutes);
 
 const PORT = process.env.PORT || 5000;
 
