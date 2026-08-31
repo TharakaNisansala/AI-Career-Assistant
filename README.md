@@ -1,18 +1,18 @@
-🚀 AI Career Assistant Platform
+AI Career Assistant Platform
 
 An AI-powered career assistant platform designed to help job seekers improve their resumes, evaluate ATS compatibility, match resumes with job descriptions, identify skill gaps, and receive personalized career guidance using Large Language Models (LLMs).
 
-Project Status: 🚧 Under Development
+Project Status: Under Development
 
 
-📖 Overview
+Overview
 
 The AI Career Assistant Platform helps users analyze their resumes and improve their chances of getting shortlisted for job opportunities. The platform uses Artificial Intelligence to evaluate resumes against job descriptions, provide ATS scores, identify missing skills, suggest improvements, generate interview questions, and recommend personalized learning paths.
 
 This project is being developed as a full-stack portfolio application to demonstrate software engineering principles, AI integration, system design, and modern web development practices.
 
 
-🎯 Objectives
+Objectives
 
 * Analyze resumes using AI
 * Evaluate ATS compatibility
@@ -24,7 +24,7 @@ This project is being developed as a full-stack portfolio application to demonst
 * Track previous resume analyses
 
 
-✨ Planned Features
+Planned Features
 
 User Management
 * User Registration
@@ -62,7 +62,7 @@ Interview Preparation
 * AI Feedback on Answers
 
 
-🛠️ Tech Stack
+Tech Stack
 
 Frontend
 * React
@@ -91,7 +91,7 @@ Deployment
 * Supabase (Database)
   
 
-📁 Project Structure
+Project Structure
 
 text
 AI-Career-Assistant/
@@ -104,7 +104,7 @@ AI-Career-Assistant/
 └── .gitignore
 
 
-📅 Development Roadmap
+Development Roadmap
 
 Week 1
 * Project Planning
@@ -136,7 +136,7 @@ Week 8
 * Deployment & Documentation
 
 
-📚 Documentation
+Documentation
 
 Project documentation will be available in the **docs/** directory.
 * Project Overview
@@ -149,7 +149,7 @@ Project documentation will be available in the **docs/** directory.
 * Development Plan
 
 
-🎯 Target Users
+Target Users
 * University Students
 * Fresh Graduates
 * Job Seekers
@@ -157,7 +157,7 @@ Project documentation will be available in the **docs/** directory.
 * Junior Software Engineers
 
 
-🔮 Future Enhancements
+Future Enhancements
 * AI Mock Interview
 * Resume Builder
 * Cover Letter Generator
@@ -166,10 +166,10 @@ Project documentation will be available in the **docs/** directory.
 * Career Progress Dashboard
 
 
-👨‍💻 Author
+Author
 Tharaka Balasooriya
 Computer Science Graduate | Full Stack Developer | AI Enthusiast
 
 
-📌 Note
+Note
 This project is currently under active development and is being built as a production-style portfolio project to demonstrate full-stack development, AI integration, system architecture, and modern software engineering practices.
