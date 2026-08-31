@@ -122,6 +122,30 @@ Response (200):
     ]
     }
 
+Extract Resume Text
+
+Endpoint
+GET /api/v1/resumes/{resumeId}/text
+
+Purpose:
+Extract and return the plain text content of a resume owned by the
+authenticated user (PDF or DOCX), ready to hand to the AI analysis layer.
+Nothing is persisted by this endpoint; the text is re-derived from the
+stored file on every call.
+
+Response (200):
+    {
+    "status": "success",
+    "resumeId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "text": "Jane Doe\nSenior Backend Engineer\n...",
+    "characterCount": 1832
+    }
+
+Error responses: 400 (invalid resumeId), 401 (missing/invalid token), 404
+(resume not found, belongs to another user, or its file is missing from
+storage), 422 (the document has no readable text, or could not be parsed
+because it is corrupted).
+
 Delete Resume
 
 Endpoint
@@ -233,6 +257,7 @@ Evaluate user answer using AI.
 | Login              | POST   | /auth/login           |
 | Upload Resume      | POST   | /resumes/upload       |
 | View Resumes       | GET    | /resumes              |
+| Extract Resume Text| GET    | /resumes/{id}/text    |
 | Delete Resume      | DELETE | /resumes/{id}         |
 | Resume Analysis    | POST   | /analysis/resume/{id} |
 | Job Matching       | POST   | /job-match            |
