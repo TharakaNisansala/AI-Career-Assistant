@@ -46,6 +46,17 @@ test("GET /resumes without a token is rejected", async () => {
   });
 });
 
+test("GET /resumes/:resumeId/text without a token is rejected", async () => {
+  await withServer(async (baseUrl) => {
+    const response = await fetch(
+      `${baseUrl}/api/v1/resumes/3fa85f64-5717-4562-b3fc-2c963f66afa6/text`
+    );
+    assert.equal(response.status, 401);
+    const body = await response.json();
+    assert.equal(body.status, "error");
+  });
+});
+
 test("DELETE /resumes/:resumeId without a token is rejected", async () => {
   await withServer(async (baseUrl) => {
     const response = await fetch(
