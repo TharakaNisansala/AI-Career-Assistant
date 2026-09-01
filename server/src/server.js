@@ -15,7 +15,7 @@ const interviewPrepRoutes = require("./routes/interviewPrep.routes");
 
 const app = express();
 
-const allowedOrigins = (process.env.CLIENT_URL || "http://localhost:5173")
+const allowedOrigins = (process.env.CLIENT_URL || "http://localhost:5180")
   .split(",")
   .map((origin) => origin.trim());
 
