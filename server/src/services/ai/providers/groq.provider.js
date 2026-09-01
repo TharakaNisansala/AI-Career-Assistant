@@ -13,8 +13,11 @@ const DEFAULT_BASE_URL = "https://api.groq.com/openai/v1";
 const CHAT_COMPLETIONS_PATH = "/chat/completions";
 // Free-tier model with strong instruction-following for the structured JSON
 // extraction this app relies on (resume facts, job requirements, interview
-// questions/evaluations).
-const DEFAULT_MODEL = "llama-3.3-70b-versatile";
+// questions/evaluations). llama-3.3-70b-versatile was the original pick here
+// but Groq has since retired it from the catalog; verify against
+// GET /openai/v1/models before changing this again -- Groq's free-tier
+// lineup turns over.
+const DEFAULT_MODEL = "openai/gpt-oss-120b";
 const DEFAULT_TIMEOUT_MS = 30000;
 const DEFAULT_MAX_TOKENS = 1024;
 const DEFAULT_TEMPERATURE = 0.4;
