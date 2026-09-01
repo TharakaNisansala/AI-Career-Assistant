@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
   name VARCHAR(255) NOT NULL,
   email VARCHAR(255) UNIQUE NOT NULL,
   password VARCHAR(255) NOT NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT NOW()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- Resumes table (docs/Database_Design.md section 4.2)
@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS resumes (
   file_path TEXT NOT NULL,
   file_size INTEGER NOT NULL,
   mime_type VARCHAR(100) NOT NULL,
-  uploaded_at TIMESTAMP NOT NULL DEFAULT NOW()
+  uploaded_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_resumes_user_id ON resumes(user_id);
@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS resume_analyses (
   education JSONB NOT NULL DEFAULT '[]'::jsonb,
   experience JSONB NOT NULL DEFAULT '[]'::jsonb,
   recommendations JSONB NOT NULL DEFAULT '[]'::jsonb,
-  created_at TIMESTAMP NOT NULL DEFAULT NOW()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_resume_analyses_resume_id ON resume_analyses(resume_id);
@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS job_descriptions (
   user_id UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
   title VARCHAR(255) NOT NULL,
   description TEXT NOT NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT NOW()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_job_descriptions_user_id ON job_descriptions(user_id);
@@ -79,7 +79,7 @@ CREATE TABLE IF NOT EXISTS job_matches (
   missing_skills JSONB NOT NULL DEFAULT '[]'::jsonb,
   strengths JSONB NOT NULL DEFAULT '[]'::jsonb,
   recommendations JSONB NOT NULL DEFAULT '[]'::jsonb,
-  created_at TIMESTAMP NOT NULL DEFAULT NOW()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_job_matches_job_id ON job_matches(job_id);
@@ -99,7 +99,7 @@ CREATE TABLE IF NOT EXISTS interview_sessions (
   job_id UUID REFERENCES job_descriptions(job_id) ON DELETE SET NULL,
   target_role VARCHAR(255) NOT NULL DEFAULT '',
   questions JSONB NOT NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT NOW()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_interview_sessions_user_id ON interview_sessions(user_id);
@@ -121,7 +121,7 @@ CREATE TABLE IF NOT EXISTS interview_answers (
   strengths JSONB NOT NULL DEFAULT '[]'::jsonb,
   weaknesses JSONB NOT NULL DEFAULT '[]'::jsonb,
   suggestions JSONB NOT NULL DEFAULT '[]'::jsonb,
-  created_at TIMESTAMP NOT NULL DEFAULT NOW()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_interview_answers_session_id ON interview_answers(session_id);

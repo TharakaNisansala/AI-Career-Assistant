@@ -1,4 +1,5 @@
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PASSWORD_COMPLEXITY_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/;
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -15,6 +16,10 @@ function validateRegisterInput({ name, email, password }) {
 
   if (!password || typeof password !== "string" || password.length < 8) {
     errors.push("Password must be at least 8 characters long");
+  } else if (!PASSWORD_COMPLEXITY_REGEX.test(password)) {
+    errors.push(
+      "Password must include at least one uppercase letter, one lowercase letter, and one number"
+    );
   }
 
   return errors;

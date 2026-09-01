@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const helmet = require("helmet");
 require("dotenv").config();
 
 const { checkDatabaseConnection } = require("./services/health.service");
@@ -14,7 +15,17 @@ const interviewPrepRoutes = require("./routes/interviewPrep.routes");
 
 const app = express();
 
-app.use(cors());
+const allowedOrigins = (process.env.CLIENT_URL || "http://localhost:5180")
+  .split(",")
+  .map((origin) => origin.trim());
+
+app.use(helmet());
+app.use(
+  cors({
+    origin: allowedOrigins,
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 app.use("/api/v1", healthRoutes);
