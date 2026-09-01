@@ -50,7 +50,15 @@ async function withFakeAIProvider(respond, run) {
   await new Promise((resolve) => server.once("listening", resolve));
   const { port } = server.address();
 
-  const original = { AI_API_KEY: process.env.AI_API_KEY, AI_API_BASE_URL: process.env.AI_API_BASE_URL };
+  const original = {
+    AI_PROVIDER: process.env.AI_PROVIDER,
+    AI_API_KEY: process.env.AI_API_KEY,
+    AI_API_BASE_URL: process.env.AI_API_BASE_URL,
+  };
+  // Pinned regardless of .env's AI_PROVIDER: the fake server below always
+  // responds in Anthropic's response shape, and the "reports the model's
+  // reply" test asserts body.provider === "anthropic".
+  process.env.AI_PROVIDER = "anthropic";
   process.env.AI_API_KEY = "test-key";
   process.env.AI_API_BASE_URL = `http://127.0.0.1:${port}`;
 
