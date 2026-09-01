@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 import { ApiRequestError } from "@/lib/apiClient";
-import { validateEmail, validateRequired } from "@/lib/validation";
+import { validateEmail, validateRequired, getSafeRedirectPath } from "@/lib/validation";
 
 interface FieldErrors {
   email?: string;
@@ -39,7 +39,7 @@ export function LoginPage() {
     setIsSubmitting(true);
     try {
       await login(email, password);
-      const redirectTo = (location.state as { from?: string } | null)?.from ?? "/";
+      const redirectTo = getSafeRedirectPath((location.state as { from?: string } | null)?.from);
       navigate(redirectTo, { replace: true });
     } catch (error) {
       setFormError(error instanceof ApiRequestError ? error.message : "Unable to log in");

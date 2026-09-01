@@ -5,6 +5,7 @@ const {
   EmptyDocumentError,
   CorruptedDocumentError,
   UnsupportedMimeTypeError,
+  DocumentTooLargeError,
 } = require("../utils/textExtraction.utils");
 const { requestAiAnalysis } = require("../services/resumeAnalysis.service");
 const { requestAiJobRequirements } = require("../services/jobMatch.service");
@@ -18,7 +19,10 @@ const {
   listAnswersForSession,
 } = require("../services/interviewPrep.service");
 const { AIResponseValidationError } = require("../utils/analysisValidation");
-const { validateAnswerSubmissionInput } = require("../utils/interviewValidation");
+const {
+  validateAnswerSubmissionInput,
+  validateTargetRole,
+} = require("../utils/interviewValidation");
 const {
   AIConfigurationError,
   AITimeoutError,
@@ -58,7 +62,11 @@ function serializeAnswer(answer) {
 // cascade: interview prep goes through the same resume-extraction and AI
 // transport/validation pipeline, so the same mapping to HTTP codes applies.
 function handleInterviewError(error, res, fallbackMessage) {
-  if (error instanceof EmptyDocumentError || error instanceof CorruptedDocumentError) {
+  if (
+    error instanceof EmptyDocumentError ||
+    error instanceof CorruptedDocumentError ||
+    error instanceof DocumentTooLargeError
+  ) {
     return res.status(422).json({ status: "error", message: error.message });
   }
   if (error instanceof UnsupportedMimeTypeError) {
@@ -105,6 +113,11 @@ async function generateInterviewSession(req, res) {
   }
   if (jobId !== undefined && jobId !== null && jobId !== "" && !isValidUUID(jobId)) {
     return res.status(400).json({ status: "error", message: "Invalid job description id" });
+  }
+
+  const targetRoleError = validateTargetRole(targetRole);
+  if (targetRoleError) {
+    return res.status(400).json({ status: "error", message: targetRoleError });
   }
 
   try {

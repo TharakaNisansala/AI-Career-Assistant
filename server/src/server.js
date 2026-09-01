@@ -4,6 +4,7 @@ const helmet = require("helmet");
 require("dotenv").config();
 
 const { checkDatabaseConnection } = require("./services/health.service");
+const { apiRateLimiter } = require("./middleware/rateLimit.middleware");
 const healthRoutes = require("./routes/health.routes");
 const authRoutes = require("./routes/auth.routes");
 const resumeRoutes = require("./routes/resume.routes");
@@ -15,9 +16,25 @@ const interviewPrepRoutes = require("./routes/interviewPrep.routes");
 
 const app = express();
 
+// Needed so req.secure / x-forwarded-proto reflect the real client scheme
+// when the app runs behind a reverse proxy or load balancer (Render,
+// Heroku, nginx, etc.), which is what the HTTPS redirect below relies on.
+app.set("trust proxy", 1);
+
 const allowedOrigins = (process.env.CLIENT_URL || "http://localhost:5180")
   .split(",")
   .map((origin) => origin.trim());
+
+// Only enforced in production: local/dev servers usually aren't served over
+// TLS at all, so redirecting there would just break the dev workflow.
+if (process.env.NODE_ENV === "production") {
+  app.use((req, res, next) => {
+    if (req.secure || req.headers["x-forwarded-proto"] === "https") {
+      return next();
+    }
+    res.redirect(301, `https://${req.headers.host}${req.originalUrl}`);
+  });
+}
 
 app.use(helmet());
 app.use(
@@ -26,7 +43,8 @@ app.use(
     credentials: true,
   })
 );
-app.use(express.json());
+app.use(express.json({ limit: "100kb" }));
+app.use("/api/v1", apiRateLimiter);
 
 app.use("/api/v1", healthRoutes);
 app.use("/api/v1", authRoutes);

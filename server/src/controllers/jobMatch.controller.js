@@ -5,6 +5,7 @@ const {
   EmptyDocumentError,
   CorruptedDocumentError,
   UnsupportedMimeTypeError,
+  DocumentTooLargeError,
 } = require("../utils/textExtraction.utils");
 const { requestAiAnalysis } = require("../services/resumeAnalysis.service");
 const { requestAiJobRequirements, saveJobMatch, listJobMatches } = require("../services/jobMatch.service");
@@ -37,7 +38,11 @@ function serializeJobMatch(match) {
 // resume-extraction and AI transport/validation error cascade to HTTP codes,
 // since matching goes through both of those pipelines.
 function handleJobMatchError(error, res, fallbackMessage) {
-  if (error instanceof EmptyDocumentError || error instanceof CorruptedDocumentError) {
+  if (
+    error instanceof EmptyDocumentError ||
+    error instanceof CorruptedDocumentError ||
+    error instanceof DocumentTooLargeError
+  ) {
     return res.status(422).json({ status: "error", message: error.message });
   }
   if (error instanceof UnsupportedMimeTypeError) {

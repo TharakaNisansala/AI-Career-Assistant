@@ -11,6 +11,17 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Revoked tokens table (services/auth.service.js)
+-- JWTs are otherwise stateless and stay valid until they expire on their
+-- own; logging out records the token's jti here so auth.middleware.js can
+-- reject it immediately instead of waiting out its natural expiry.
+-- expires_at mirrors the token's own expiry so rows can be pruned once the
+-- token would have expired anyway.
+CREATE TABLE IF NOT EXISTS revoked_tokens (
+  jti UUID PRIMARY KEY,
+  expires_at TIMESTAMPTZ NOT NULL
+);
+
 -- Resumes table (docs/Database_Design.md section 4.2)
 -- file_path stores a storage-driver-specific key (local filename today, an
 -- object key if this moves to cloud storage later), not a filesystem path,

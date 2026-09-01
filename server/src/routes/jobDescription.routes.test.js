@@ -61,7 +61,7 @@ test("POST /job-descriptions stores a job description for the authenticated user
 
   await withServer(async (baseUrl) => {
     const suffix = crypto.randomBytes(4).toString("hex");
-    const token = await registerAndLogin(baseUrl, `jobdesc-${suffix}@example.com`, "password123");
+    const token = await registerAndLogin(baseUrl, `jobdesc-${suffix}@example.com`, "Password123");
 
     const response = await fetch(`${baseUrl}/api/v1/job-descriptions`, {
       method: "POST",
@@ -93,7 +93,7 @@ test("POST /job-descriptions rejects an empty job description", async (t) => {
 
   await withServer(async (baseUrl) => {
     const suffix = crypto.randomBytes(4).toString("hex");
-    const token = await registerAndLogin(baseUrl, `jobdescempty-${suffix}@example.com`, "password123");
+    const token = await registerAndLogin(baseUrl, `jobdescempty-${suffix}@example.com`, "Password123");
 
     const response = await fetch(`${baseUrl}/api/v1/job-descriptions`, {
       method: "POST",
@@ -126,8 +126,8 @@ test("GET /job-descriptions only returns job descriptions owned by the caller", 
   await withServer(async (baseUrl) => {
     const suffixA = crypto.randomBytes(4).toString("hex");
     const suffixB = crypto.randomBytes(4).toString("hex");
-    const tokenA = await registerAndLogin(baseUrl, `owner-a-${suffixA}@example.com`, "password123");
-    const tokenB = await registerAndLogin(baseUrl, `owner-b-${suffixB}@example.com`, "password123");
+    const tokenA = await registerAndLogin(baseUrl, `owner-a-${suffixA}@example.com`, "Password123");
+    const tokenB = await registerAndLogin(baseUrl, `owner-b-${suffixB}@example.com`, "Password123");
 
     await fetch(`${baseUrl}/api/v1/job-descriptions`, {
       method: "POST",

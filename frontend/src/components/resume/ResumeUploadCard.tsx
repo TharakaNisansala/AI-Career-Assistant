@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 import {
   ALLOWED_RESUME_EXTENSIONS,
+  ALLOWED_RESUME_MIME_TYPES,
   MAX_RESUME_FILE_SIZE_BYTES,
   MAX_RESUME_FILE_SIZE_MB,
 } from "@/lib/constants";
@@ -16,9 +17,14 @@ interface ResumeUploadCardProps {
   onUploaded: () => void;
 }
 
+// This is a UX affordance only -- a renamed/relabeled file can trivially
+// spoof both the extension and file.type here, so the real enforcement is
+// the backend's content-signature check (server/src/utils/file.utils.js).
 function validateFile(file: File): string | undefined {
   const extension = file.name.slice(file.name.lastIndexOf(".")).toLowerCase();
-  if (!ALLOWED_RESUME_EXTENSIONS.includes(extension)) {
+  const hasAllowedExtension = ALLOWED_RESUME_EXTENSIONS.includes(extension);
+  const hasAllowedMimeType = !file.type || ALLOWED_RESUME_MIME_TYPES.includes(file.type);
+  if (!hasAllowedExtension || !hasAllowedMimeType) {
     return "Only PDF and DOCX files are allowed";
   }
   if (file.size > MAX_RESUME_FILE_SIZE_BYTES) {

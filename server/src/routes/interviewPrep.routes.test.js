@@ -99,7 +99,7 @@ async function createJobDescription(baseUrl, token, title, description) {
 
 async function setupOwnerWithResume(baseUrl, emailPrefix) {
   const suffix = crypto.randomBytes(4).toString("hex");
-  const token = await registerAndLogin(baseUrl, `${emailPrefix}-${suffix}@example.com`, "password123");
+  const token = await registerAndLogin(baseUrl, `${emailPrefix}-${suffix}@example.com`, "Password123");
   const pdfBuffer = await buildPdfBuffer(
     "Jane Doe\nSenior Backend Engineer\njane@example.com | 555-123-4567\n\n" +
       "Experience\nSenior Backend Engineer, Tech Corp\n\nSkills\nNode.js, PostgreSQL, Docker"
@@ -495,7 +495,7 @@ test("GET /interview-prep/sessions/:sessionId returns 404 when the session belon
       });
 
       const suffix = crypto.randomBytes(4).toString("hex");
-      const otherToken = await registerAndLogin(baseUrl, `other-${suffix}@example.com`, "password123");
+      const otherToken = await registerAndLogin(baseUrl, `other-${suffix}@example.com`, "Password123");
 
       const response = await fetch(`${baseUrl}/api/v1/interview-prep/sessions/${sessionId}`, {
         headers: { Authorization: `Bearer ${otherToken}` },
@@ -519,7 +519,7 @@ test("POST /interview-prep/sessions returns 404 when the resume belongs to anoth
   await withServer(async (baseUrl) => {
     const { token: ownerToken, resumeId } = await setupOwnerWithResume(baseUrl, "resumeowner");
     const suffix = crypto.randomBytes(4).toString("hex");
-    const otherToken = await registerAndLogin(baseUrl, `other-${suffix}@example.com`, "password123");
+    const otherToken = await registerAndLogin(baseUrl, `other-${suffix}@example.com`, "Password123");
 
     try {
       const response = await fetch(`${baseUrl}/api/v1/interview-prep/sessions`, {

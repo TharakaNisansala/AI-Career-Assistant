@@ -34,9 +34,31 @@ async function verifyPassword(plainPassword, passwordHash) {
   return bcrypt.compare(plainPassword, passwordHash);
 }
 
+// Records a token's jti as revoked (see auth.middleware.js's isTokenRevoked
+// check) and opportunistically prunes rows for tokens that would have
+// expired on their own by now, since revoked_tokens only needs to remember a
+// jti for as long as the token itself would still be valid.
+async function revokeToken(jti, expiresAt) {
+  await pool.query("DELETE FROM revoked_tokens WHERE expires_at < NOW()");
+  await pool.query(
+    "INSERT INTO revoked_tokens (jti, expires_at) VALUES ($1, $2) ON CONFLICT (jti) DO NOTHING",
+    [jti, expiresAt]
+  );
+}
+
+async function isTokenRevoked(jti) {
+  if (!jti) {
+    return false;
+  }
+  const result = await pool.query("SELECT 1 FROM revoked_tokens WHERE jti = $1", [jti]);
+  return result.rowCount > 0;
+}
+
 module.exports = {
   findUserByEmail,
   findUserById,
   createUser,
   verifyPassword,
+  revokeToken,
+  isTokenRevoked,
 };

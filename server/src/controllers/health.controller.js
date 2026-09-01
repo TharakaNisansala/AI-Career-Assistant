@@ -9,11 +9,13 @@ function getApiHealth(req, res) {
 
 async function getDatabaseHealth(req, res) {
   try {
-    const serverTime = await checkDatabaseConnection();
+    // Only confirm reachability -- the DB's own clock/timestamp isn't
+    // needed by any caller and shouldn't be exposed on an unauthenticated
+    // endpoint.
+    await checkDatabaseConnection();
     res.json({
       status: "success",
       message: "Database connection is healthy",
-      serverTime,
     });
   } catch (error) {
     console.error("Database health check failed:", error.message);

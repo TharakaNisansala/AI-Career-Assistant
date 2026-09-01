@@ -92,12 +92,12 @@ test("GET /resumes/:resumeId/text extracts the owner's resume and rejects other 
     const ownerToken = await registerAndLogin(
       baseUrl,
       `owner-${suffix}@example.com`,
-      "password123"
+      "Password123"
     );
     const otherToken = await registerAndLogin(
       baseUrl,
       `other-${suffix}@example.com`,
-      "password123"
+      "Password123"
     );
 
     const pdfBuffer = await buildPdfBuffer("Jane Doe - Senior Backend Engineer");

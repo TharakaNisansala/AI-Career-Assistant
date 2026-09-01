@@ -4,6 +4,7 @@ const {
   EmptyDocumentError,
   CorruptedDocumentError,
   UnsupportedMimeTypeError,
+  DocumentTooLargeError,
 } = require("../utils/textExtraction.utils");
 const {
   requestAiAnalysis,
@@ -38,7 +39,11 @@ function serializeAnalysis(analysis) {
 }
 
 function handleAnalysisError(error, res, fallbackMessage) {
-  if (error instanceof EmptyDocumentError || error instanceof CorruptedDocumentError) {
+  if (
+    error instanceof EmptyDocumentError ||
+    error instanceof CorruptedDocumentError ||
+    error instanceof DocumentTooLargeError
+  ) {
     return res.status(422).json({ status: "error", message: error.message });
   }
   if (error instanceof UnsupportedMimeTypeError) {

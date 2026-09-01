@@ -52,6 +52,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [login]);
 
   const logout = useCallback(() => {
+    // Best-effort: revoke the token server-side so it can't be reused if it
+    // was ever stolen, but don't let a network failure stop the client from
+    // clearing its own session.
+    authService.logout().catch(() => {});
     localStorage.removeItem(AUTH_TOKEN_STORAGE_KEY);
     setUser(null);
   }, []);

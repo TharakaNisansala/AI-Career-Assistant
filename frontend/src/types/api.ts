@@ -14,7 +14,6 @@ export interface User {
 export interface RegisterResponse {
   status: "success";
   message: string;
-  userId: string;
 }
 
 export interface LoginResponse {

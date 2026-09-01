@@ -5,6 +5,10 @@
 const { toStringArray, AIResponseValidationError } = require("./analysisValidation");
 
 const MIN_ANSWER_LENGTH = 10;
+// Bounds how much free text a single answer can push into the AI evaluation
+// prompt (see interviewPrep.service.js's buildAnswerEvaluationUserPrompt).
+const MAX_ANSWER_LENGTH = 5000;
+const MAX_TARGET_ROLE_LENGTH = 150;
 
 function sanitizeQuestionList(value) {
   if (!Array.isArray(value)) {
@@ -75,13 +79,32 @@ function validateAnswerSubmissionInput({ questionId, answerText }) {
 
   if (!answerText || typeof answerText !== "string" || answerText.trim().length < MIN_ANSWER_LENGTH) {
     errors.push(`Answer must be at least ${MIN_ANSWER_LENGTH} characters long`);
+  } else if (answerText.trim().length > MAX_ANSWER_LENGTH) {
+    errors.push(`Answer must be at most ${MAX_ANSWER_LENGTH} characters long`);
   }
 
   return errors;
+}
+
+// Validates the optional targetRole field on interview session generation,
+// which otherwise flows unchecked into the AI prompt (see
+// interviewPrep.service.js's buildQuestionsUserPrompt).
+function validateTargetRole(targetRole) {
+  if (targetRole === undefined || targetRole === null || targetRole === "") {
+    return null;
+  }
+  if (typeof targetRole !== "string") {
+    return "targetRole must be a string";
+  }
+  if (targetRole.trim().length > MAX_TARGET_ROLE_LENGTH) {
+    return `targetRole must be at most ${MAX_TARGET_ROLE_LENGTH} characters long`;
+  }
+  return null;
 }
 
 module.exports = {
   validateQuestionsPayload,
   validateAnswerEvaluationPayload,
   validateAnswerSubmissionInput,
+  validateTargetRole,
 };

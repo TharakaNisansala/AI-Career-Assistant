@@ -110,7 +110,13 @@ test("upload endpoint accepts a valid PDF", async () => {
 
 test("upload endpoint accepts a valid DOCX", async () => {
   await withServer(async (baseUrl) => {
-    const blob = new Blob([Buffer.from("fake docx content")], {
+    // DOCX is a zip archive, so its bytes must at least start with the zip
+    // local-file-header signature to pass the content-sniffing check.
+    const docxBytes = Buffer.concat([
+      Buffer.from([0x50, 0x4b, 0x03, 0x04]),
+      Buffer.from("fake docx content"),
+    ]);
+    const blob = new Blob([docxBytes], {
       type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     });
     const response = await fetch(`${baseUrl}/test-upload`, {
@@ -120,6 +126,21 @@ test("upload endpoint accepts a valid DOCX", async () => {
     assert.equal(response.status, 200);
     const body = await response.json();
     assert.equal(body.status, "success");
+  });
+});
+
+test("upload endpoint rejects content that doesn't match its claimed extension", async () => {
+  await withServer(async (baseUrl) => {
+    const blob = new Blob([Buffer.from("<html>not actually a pdf</html>")], {
+      type: "application/pdf",
+    });
+    const response = await fetch(`${baseUrl}/test-upload`, {
+      method: "POST",
+      body: buildForm([["resume", blob, "resume.pdf"]]),
+    });
+    assert.equal(response.status, 400);
+    const body = await response.json();
+    assert.equal(body.status, "error");
   });
 });
 

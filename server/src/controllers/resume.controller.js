@@ -12,6 +12,7 @@ const {
   EmptyDocumentError,
   CorruptedDocumentError,
   UnsupportedMimeTypeError,
+  DocumentTooLargeError,
 } = require("../utils/textExtraction.utils");
 const { isValidUUID } = require("../utils/validators");
 
@@ -77,7 +78,11 @@ async function getResumeText(req, res) {
       characterCount: text.length,
     });
   } catch (error) {
-    if (error instanceof EmptyDocumentError || error instanceof CorruptedDocumentError) {
+    if (
+      error instanceof EmptyDocumentError ||
+      error instanceof CorruptedDocumentError ||
+      error instanceof DocumentTooLargeError
+    ) {
       return res.status(422).json({ status: "error", message: error.message });
     }
     if (error instanceof UnsupportedMimeTypeError) {

@@ -40,3 +40,14 @@ export function validateAnswerText(answer: string): string | undefined {
   if (answer.trim().length < 10) return "Answer must be at least 10 characters long";
   return undefined;
 }
+
+// Only ever follow a same-origin, in-app relative path as a post-login
+// redirect target. location.state.from is attacker-influencable (a crafted
+// link can set router state), so an absolute URL or a protocol-relative
+// "//evil.com" must never be passed straight to navigate().
+export function getSafeRedirectPath(path: unknown): string {
+  if (typeof path !== "string" || !path.startsWith("/") || path.startsWith("//")) {
+    return "/";
+  }
+  return path;
+}

@@ -1,5 +1,6 @@
 const multer = require("multer");
 const path = require("path");
+const { fileContentMatchesMimeType } = require("../utils/file.utils");
 
 const MAX_RESUME_FILE_SIZE_MB = Number(process.env.MAX_RESUME_FILE_SIZE_MB) || 5;
 const MAX_RESUME_FILE_SIZE_BYTES = MAX_RESUME_FILE_SIZE_MB * 1024 * 1024;
@@ -43,28 +44,41 @@ const upload = multer({
 
 function uploadResumeFile(req, res, next) {
   upload.single("resume")(req, res, (error) => {
-    if (!error) {
-      return next();
-    }
-
-    if (error instanceof multer.MulterError) {
-      if (error.code === "LIMIT_FILE_SIZE") {
-        return res.status(413).json({
-          status: "error",
-          message: `File is too large. Maximum size is ${MAX_RESUME_FILE_SIZE_MB}MB`,
-        });
+    if (error) {
+      if (error instanceof multer.MulterError) {
+        if (error.code === "LIMIT_FILE_SIZE") {
+          return res.status(413).json({
+            status: "error",
+            message: `File is too large. Maximum size is ${MAX_RESUME_FILE_SIZE_MB}MB`,
+          });
+        }
+        console.error("Resume upload rejected by multer:", error.message);
+        return res
+          .status(400)
+          .json({ status: "error", message: "Unable to process the uploaded file" });
       }
-      return res.status(400).json({ status: "error", message: error.message });
+
+      if (error instanceof UnsupportedFileTypeError) {
+        return res.status(400).json({ status: "error", message: error.message });
+      }
+
+      console.error("Resume upload middleware failed:", error.message);
+      return res
+        .status(500)
+        .json({ status: "error", message: "Unable to process file upload" });
     }
 
-    if (error instanceof UnsupportedFileTypeError) {
-      return res.status(400).json({ status: "error", message: error.message });
+    // The declared extension and mime type are both attacker-controlled
+    // request metadata (resumeFileFilter above only checks those); confirm
+    // the actual bytes match before accepting the file.
+    if (req.file && !fileContentMatchesMimeType(req.file.buffer, req.file.mimetype)) {
+      return res.status(400).json({
+        status: "error",
+        message: "File content does not match its extension",
+      });
     }
 
-    console.error("Resume upload middleware failed:", error.message);
-    return res
-      .status(500)
-      .json({ status: "error", message: "Unable to process file upload" });
+    next();
   });
 }
 

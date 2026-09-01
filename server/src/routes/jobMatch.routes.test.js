@@ -184,7 +184,7 @@ const MATCHING_JOB_REQUIREMENTS = {
 
 async function setupOwnerWithResume(baseUrl, emailPrefix, resumeText) {
   const suffix = crypto.randomBytes(4).toString("hex");
-  const token = await registerAndLogin(baseUrl, `${emailPrefix}-${suffix}@example.com`, "password123");
+  const token = await registerAndLogin(baseUrl, `${emailPrefix}-${suffix}@example.com`, "Password123");
   const pdfBuffer = await buildPdfBuffer(resumeText);
   const uploadBody = await uploadResume(baseUrl, token, pdfBuffer, "resume.pdf", "application/pdf");
   return { token, resumeId: uploadBody.resume.resumeId };
@@ -309,7 +309,7 @@ test("POST /job-match/:jobId/resume/:resumeId returns 404 when the resume belong
     const jobId = jobBody.jobDescription.jobId;
 
     const suffix = crypto.randomBytes(4).toString("hex");
-    const otherToken = await registerAndLogin(baseUrl, `other-${suffix}@example.com`, "password123");
+    const otherToken = await registerAndLogin(baseUrl, `other-${suffix}@example.com`, "Password123");
     // The other user needs their own stored job description, since job
     // ownership is checked before resume ownership.
     const otherJobBody = await createJobDescription(

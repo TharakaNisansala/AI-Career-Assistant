@@ -150,7 +150,7 @@ const VALID_AI_PAYLOAD = {
 
 async function setupOwnerWithResume(baseUrl, emailPrefix) {
   const suffix = crypto.randomBytes(4).toString("hex");
-  const token = await registerAndLogin(baseUrl, `${emailPrefix}-${suffix}@example.com`, "password123");
+  const token = await registerAndLogin(baseUrl, `${emailPrefix}-${suffix}@example.com`, "Password123");
   const pdfBuffer = await buildPdfBuffer(
     "Jane Doe\nSenior Backend Engineer\njane@example.com | 555-123-4567\n\n" +
       "Summary\nExperienced backend engineer.\n\n" +
@@ -216,7 +216,7 @@ test("POST /analysis/resume/:resumeId returns 404 for a resume that does not exi
 
   await withServer(async (baseUrl) => {
     const suffix = crypto.randomBytes(4).toString("hex");
-    const token = await registerAndLogin(baseUrl, `solo-${suffix}@example.com`, "password123");
+    const token = await registerAndLogin(baseUrl, `solo-${suffix}@example.com`, "Password123");
     const response = await fetch(`${baseUrl}/api/v1/analysis/resume/${crypto.randomUUID()}`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
@@ -234,7 +234,7 @@ test("POST /analysis/resume/:resumeId returns 404 when the resume belongs to ano
   await withServer(async (baseUrl) => {
     const { token: ownerToken, resumeId } = await setupOwnerWithResume(baseUrl, "owner2");
     const suffix = crypto.randomBytes(4).toString("hex");
-    const otherToken = await registerAndLogin(baseUrl, `other-${suffix}@example.com`, "password123");
+    const otherToken = await registerAndLogin(baseUrl, `other-${suffix}@example.com`, "Password123");
 
     try {
       const response = await fetch(`${baseUrl}/api/v1/analysis/resume/${resumeId}`, {
