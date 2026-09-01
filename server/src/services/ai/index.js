@@ -3,10 +3,12 @@
 // adding a provider later means dropping in a new module here (e.g.
 // openai.provider.js) and pointing AI_PROVIDER at it -- callers never change.
 const anthropicProvider = require("./providers/anthropic.provider");
+const groqProvider = require("./providers/groq.provider");
 const { AIConfigurationError } = require("./errors");
 
 const providers = {
   anthropic: anthropicProvider,
+  groq: groqProvider,
 };
 
 // Resolved at call time (not module load) so an unsupported AI_PROVIDER
