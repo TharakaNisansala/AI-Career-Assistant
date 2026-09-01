@@ -10,6 +10,7 @@ const aiRoutes = require("./routes/ai.routes");
 const resumeAnalysisRoutes = require("./routes/resumeAnalysis.routes");
 const jobDescriptionRoutes = require("./routes/jobDescription.routes");
 const jobMatchRoutes = require("./routes/jobMatch.routes");
+const interviewPrepRoutes = require("./routes/interviewPrep.routes");
 
 const app = express();
 
@@ -23,6 +24,7 @@ app.use("/api/v1", aiRoutes);
 app.use("/api/v1", resumeAnalysisRoutes);
 app.use("/api/v1", jobDescriptionRoutes);
 app.use("/api/v1", jobMatchRoutes);
+app.use("/api/v1", interviewPrepRoutes);
 
 const PORT = process.env.PORT || 5000;
 
