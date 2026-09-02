@@ -16,7 +16,9 @@ export function ScoreGauge({ score, label, size = 128 }: ScoreGaugeProps) {
   return (
     <div className="flex flex-col items-center gap-2">
       <div className="relative" style={{ width: size, height: size }}>
-        <svg width={size} height={size} className="-rotate-90">
+        {/* Decorative: the score is already rendered as text below, so screen
+            readers shouldn't announce the ring's geometry separately. */}
+        <svg width={size} height={size} className="-rotate-90" aria-hidden="true">
           <circle
             cx={size / 2}
             cy={size / 2}
