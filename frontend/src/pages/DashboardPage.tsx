@@ -52,7 +52,7 @@ export function DashboardPage() {
             </Card>
 
             <Card className="flex flex-col justify-center">
-              <p className="text-3xl font-bold text-slate-900">{data.resumes.length}</p>
+              <p className="text-3xl font-bold text-slate-900">{data.totalResumes}</p>
               <p className="text-xs font-medium text-slate-500">Resumes Uploaded</p>
             </Card>
 
