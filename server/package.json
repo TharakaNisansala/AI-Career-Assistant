@@ -6,7 +6,10 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "test": "cross-env NODE_ENV=test node --test"
+    "test": "cross-env NODE_ENV=test node --test",
+    "migrate": "node scripts/migrate.js up",
+    "migrate:down": "node scripts/migrate.js down",
+    "migrate:create": "node-pg-migrate create --migration-file-language js -j js"
   },
   "keywords": [],
   "author": "",
@@ -29,6 +32,7 @@
   },
   "devDependencies": {
     "cross-env": "^10.1.0",
+    "node-pg-migrate": "^9.0.0",
     "nodemon": "^3.1.14",
     "pdfkit": "^0.20.2"
   }
