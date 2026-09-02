@@ -78,8 +78,7 @@ Database
 * PostgreSQL (Supabase)
 
 AI
-* Ollama (Local LLM)
-* OpenAI API (Optional)
+* Configurable provider (`AI_PROVIDER` in server/.env): Anthropic Claude or Groq today
 
 File Processing
 * PDF Parser
@@ -96,12 +95,33 @@ Project Structure
 text
 AI-Career-Assistant/
 │
-├── docs/
-├── frontend/
-├── backend/
-├── database/
+├── docs/               Design docs (this repo's docs/*.md)
+├── frontend/           React + TypeScript + Vite + Tailwind (frontend/src)
+├── server/             Node.js + Express API (server/src)
+│   ├── migrations/     node-pg-migrate migrations (schema changes)
+│   └── src/config/schema.sql   Reference copy of the baseline schema
 ├── README.md
 └── .gitignore
+
+
+Getting Started
+
+Backend (server/):
+1. `cd server && npm install`
+2. Copy `.env.example` to `.env` and fill in `DATABASE_URL` (a Supabase
+   Postgres connection string), `JWT_SECRET`, and an AI provider key
+   (`AI_PROVIDER` + `AI_API_KEY`)
+3. `npm run migrate` -- applies the schema via node-pg-migrate
+4. `npm run dev` -- starts the API on `PORT` (default 5000)
+
+Frontend (frontend/):
+1. `cd frontend && npm install`
+2. Copy `.env.example` to `.env.local` and point `VITE_API_BASE_URL` at the
+   backend (default `http://localhost:5000/api/v1`)
+3. `npm run dev` -- starts the Vite dev server
+
+Run `npm test` in server/ for the backend test suite, and `npm run build`
+in frontend/ for a type-checked production build.
 
 
 Development Roadmap
