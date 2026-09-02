@@ -6,13 +6,51 @@ const {
   createUser,
   verifyPassword,
   revokeToken,
+  createRefreshToken,
+  findValidRefreshToken,
+  revokeRefreshTokenById,
+  revokeRefreshTokenByRawToken,
 } = require("../services/auth.service");
 const {
   validateRegisterInput,
   validateLoginInput,
 } = require("../utils/validators");
 
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "1h";
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "15m";
+const REFRESH_TOKEN_EXPIRES_IN_DAYS = Number(process.env.REFRESH_TOKEN_EXPIRES_IN_DAYS) || 30;
+const REFRESH_TOKEN_TTL_MS = REFRESH_TOKEN_EXPIRES_IN_DAYS * 24 * 60 * 60 * 1000;
+const REFRESH_TOKEN_COOKIE_NAME = "refreshToken";
+
+// Scoped to the auth routes only, so the cookie isn't attached to every
+// other API request; httpOnly keeps it out of reach of any XSS in the SPA,
+// which localStorage never could.
+const REFRESH_TOKEN_COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax",
+  path: "/api/v1/auth",
+};
+
+function signAccessToken(user) {
+  return jwt.sign(
+    { userId: user.user_id, email: user.email, jti: crypto.randomUUID() },
+    process.env.JWT_SECRET,
+    { expiresIn: JWT_EXPIRES_IN }
+  );
+}
+
+async function issueSession(user, res) {
+  const accessToken = signAccessToken(user);
+  const refreshToken = await createRefreshToken(
+    user.user_id,
+    new Date(Date.now() + REFRESH_TOKEN_TTL_MS)
+  );
+  res.cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, {
+    ...REFRESH_TOKEN_COOKIE_OPTIONS,
+    maxAge: REFRESH_TOKEN_TTL_MS,
+  });
+  return accessToken;
+}
 
 // Generic response used for both a brand-new registration and one for an
 // email that's already taken, so the response can't be used to enumerate
@@ -22,14 +60,6 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "1h";
 // the same way it would have anyway.
 const REGISTER_RESPONSE_MESSAGE =
   "If this information is valid, your account is ready. Please log in to continue.";
-
-function signToken(user) {
-  return jwt.sign(
-    { userId: user.user_id, email: user.email, jti: crypto.randomUUID() },
-    process.env.JWT_SECRET,
-    { expiresIn: JWT_EXPIRES_IN }
-  );
-}
 
 async function register(req, res) {
   const errors = validateRegisterInput(req.body);
@@ -73,7 +103,7 @@ async function login(req, res) {
       return res.status(401).json({ status: "error", message: "Invalid email or password" });
     }
 
-    const token = signToken(user);
+    const token = await issueSession(user, res);
 
     res.json({
       status: "success",
@@ -86,12 +116,56 @@ async function login(req, res) {
   }
 }
 
-// JWTs are stateless, so without this a token stays valid until it expires
-// even after the user "logs out". Recording its jti as revoked closes that
-// window: auth.middleware checks every incoming token against this table.
+// Exchanges the httpOnly refresh cookie for a new access token without
+// requiring the password again. The old refresh token is revoked and a new
+// one issued on every call (rotation): if a stolen refresh token is ever
+// used after the legitimate client has already rotated past it, that reuse
+// is at least confined to a single extra access token rather than granting
+// indefinite access.
+async function refresh(req, res) {
+  const rawToken = req.cookies?.[REFRESH_TOKEN_COOKIE_NAME];
+  if (!rawToken) {
+    return res.status(401).json({ status: "error", message: "Refresh token is required" });
+  }
+
+  try {
+    const stored = await findValidRefreshToken(rawToken);
+    if (!stored) {
+      res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, REFRESH_TOKEN_COOKIE_OPTIONS);
+      return res.status(401).json({ status: "error", message: "Invalid or expired refresh token" });
+    }
+
+    const user = await findUserById(stored.user_id);
+    if (!user) {
+      res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, REFRESH_TOKEN_COOKIE_OPTIONS);
+      return res.status(401).json({ status: "error", message: "Invalid or expired refresh token" });
+    }
+
+    await revokeRefreshTokenById(stored.token_id);
+    const token = await issueSession(user, res);
+
+    res.json({ status: "success", token, userId: user.user_id });
+  } catch (error) {
+    console.error("Token refresh failed:", error.message);
+    res.status(500).json({ status: "error", message: "Unable to refresh session" });
+  }
+}
+
+// JWTs are stateless, so without this an access token stays valid until it
+// expires even after the user "logs out". Recording its jti as revoked
+// closes that window (auth.middleware checks every incoming token against
+// this table); the refresh token is revoked the same way so it can't be used
+// to silently mint a fresh access token afterwards.
 async function logout(req, res) {
   try {
     await revokeToken(req.user.jti, new Date(req.user.exp * 1000));
+
+    const rawToken = req.cookies?.[REFRESH_TOKEN_COOKIE_NAME];
+    if (rawToken) {
+      await revokeRefreshTokenByRawToken(rawToken);
+    }
+    res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, REFRESH_TOKEN_COOKIE_OPTIONS);
+
     res.json({ status: "success", message: "Logged out successfully" });
   } catch (error) {
     console.error("Logout failed:", error.message);
@@ -113,4 +187,4 @@ async function getCurrentUser(req, res) {
   }
 }
 
-module.exports = { register, login, logout, getCurrentUser };
+module.exports = { register, login, refresh, logout, getCurrentUser };

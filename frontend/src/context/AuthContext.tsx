@@ -1,7 +1,7 @@
 import { createContext, useCallback, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import * as authService from "@/services/auth.service";
-import { AUTH_TOKEN_STORAGE_KEY } from "@/lib/constants";
+import { apiClient, setAccessToken } from "@/lib/apiClient";
 import type { User } from "@/types/api";
 
 interface AuthContextValue {
@@ -18,28 +18,28 @@ export const AuthContext = createContext<AuthContextValue | undefined>(undefined
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [isInitializing, setIsInitializing] = useState(
-    () => localStorage.getItem(AUTH_TOKEN_STORAGE_KEY) !== null
-  );
+  const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem(AUTH_TOKEN_STORAGE_KEY);
-    if (!token) {
-      return;
-    }
-
-    authService
-      .getCurrentUser()
-      .then(setUser)
+    // The access token lives only in memory (see apiClient.ts), so a full
+    // page reload always loses it. Recover the session, if any, from the
+    // httpOnly refresh cookie instead of a localStorage read.
+    apiClient
+      .post<{ token: string }>("/auth/refresh")
+      .then(async (response) => {
+        setAccessToken(response.data.token);
+        const currentUser = await authService.getCurrentUser();
+        setUser(currentUser);
+      })
       .catch(() => {
-        localStorage.removeItem(AUTH_TOKEN_STORAGE_KEY);
+        setAccessToken(null);
       })
       .finally(() => setIsInitializing(false));
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
     const { token } = await authService.login({ email, password });
-    localStorage.setItem(AUTH_TOKEN_STORAGE_KEY, token);
+    setAccessToken(token);
     const currentUser = await authService.getCurrentUser();
     setUser(currentUser);
   }, []);
@@ -56,7 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // was ever stolen, but don't let a network failure stop the client from
     // clearing its own session.
     authService.logout().catch(() => {});
-    localStorage.removeItem(AUTH_TOKEN_STORAGE_KEY);
+    setAccessToken(null);
     setUser(null);
   }, []);
 

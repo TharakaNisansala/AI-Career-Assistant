@@ -1,10 +1,12 @@
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
+const cookieParser = require("cookie-parser");
 require("dotenv").config();
 
 const { checkDatabaseConnection } = require("./services/health.service");
 const { apiRateLimiter } = require("./middleware/rateLimit.middleware");
+const { notFoundHandler, globalErrorHandler } = require("./middleware/errorHandler.middleware");
 const healthRoutes = require("./routes/health.routes");
 const authRoutes = require("./routes/auth.routes");
 const resumeRoutes = require("./routes/resume.routes");
@@ -13,6 +15,7 @@ const resumeAnalysisRoutes = require("./routes/resumeAnalysis.routes");
 const jobDescriptionRoutes = require("./routes/jobDescription.routes");
 const jobMatchRoutes = require("./routes/jobMatch.routes");
 const interviewPrepRoutes = require("./routes/interviewPrep.routes");
+const dashboardRoutes = require("./routes/dashboard.routes");
 
 const app = express();
 
@@ -44,6 +47,7 @@ app.use(
   })
 );
 app.use(express.json({ limit: "100kb" }));
+app.use(cookieParser());
 app.use("/api/v1", apiRateLimiter);
 
 app.use("/api/v1", healthRoutes);
@@ -54,6 +58,10 @@ app.use("/api/v1", resumeAnalysisRoutes);
 app.use("/api/v1", jobDescriptionRoutes);
 app.use("/api/v1", jobMatchRoutes);
 app.use("/api/v1", interviewPrepRoutes);
+app.use("/api/v1", dashboardRoutes);
+
+app.use(notFoundHandler);
+app.use(globalErrorHandler);
 
 const PORT = process.env.PORT || 5000;
 
