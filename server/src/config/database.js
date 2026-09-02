@@ -1,3 +1,5 @@
+const fs = require("fs");
+const path = require("path");
 const { Pool } = require("pg");
 
 if (!process.env.DATABASE_URL) {
@@ -6,16 +8,21 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-// Supabase's pooler (Supavisor/PgBouncer) presents a certificate chain that
-// isn't in Node's default trust store (verified against this project's own
-// pooler host: rejectUnauthorized: true fails with "self-signed certificate
-// in certificate chain"). Pinning Supabase's actual CA certificate would let
-// this be tightened to rejectUnauthorized: true; without it, disabling
-// verification is required for the app to connect at all.
+// Supabase signs its Postgres host certificate with its own root CA, which
+// isn't in Node's default trust store, so plain rejectUnauthorized: true
+// fails with "self-signed certificate in certificate chain". Pinning that
+// root CA (fetched once via `openssl s_client -showcerts`, self-signed,
+// subject == issuer == "Supabase Root 2021 CA") lets Node verify the real
+// chain instead of disabling verification outright.
+const supabaseCa = fs.readFileSync(
+  path.join(__dirname, "certs", "supabase-root-ca.pem")
+);
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
-    rejectUnauthorized: false,
+    ca: supabaseCa,
+    rejectUnauthorized: true,
   },
   connectionTimeoutMillis: 8000,
   idleTimeoutMillis: 30000,
