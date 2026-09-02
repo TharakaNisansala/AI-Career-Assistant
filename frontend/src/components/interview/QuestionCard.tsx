@@ -6,9 +6,8 @@ import { TextArea } from "@/components/ui/TextArea";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 import { getScoreLevel, SCORE_TEXT_CLASSES } from "@/lib/score";
-import { ApiRequestError } from "@/lib/apiClient";
 import { validateAnswerText } from "@/lib/validation";
-import * as interviewService from "@/services/interview.service";
+import { useSubmitInterviewAnswer } from "@/hooks/useInterviewActions";
 import type { InterviewAnswer, InterviewQuestion } from "@/types/api";
 
 interface QuestionCardProps {
@@ -36,9 +35,8 @@ function FeedbackList({ title, items }: { title: string; items: string[] }) {
 
 export function QuestionCard({ sessionId, question, answer, onAnswered }: QuestionCardProps) {
   const [answerText, setAnswerText] = useState("");
-  const [error, setError] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | undefined>();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { run: submitInterviewAnswer, isSubmitting, error } = useSubmitInterviewAnswer();
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -46,19 +44,11 @@ export function QuestionCard({ sessionId, question, answer, onAnswered }: Questi
     setValidationError(validation);
     if (validation) return;
 
-    setError(null);
-    setIsSubmitting(true);
     try {
-      const result = await interviewService.submitInterviewAnswer(
-        sessionId,
-        question.questionId,
-        answerText
-      );
+      const result = await submitInterviewAnswer(sessionId, question.questionId, answerText);
       onAnswered(result);
-    } catch (err) {
-      setError(err instanceof ApiRequestError ? err.message : "Unable to evaluate answer");
-    } finally {
-      setIsSubmitting(false);
+    } catch {
+      // Surfaced via error above.
     }
   }
 

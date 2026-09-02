@@ -10,8 +10,7 @@ import {
   MAX_RESUME_FILE_SIZE_MB,
 } from "@/lib/constants";
 import { formatFileSize } from "@/lib/format";
-import { ApiRequestError } from "@/lib/apiClient";
-import * as resumeService from "@/services/resume.service";
+import { useUploadResume } from "@/hooks/useResumeActions";
 
 interface ResumeUploadCardProps {
   onUploaded: () => void;
@@ -36,19 +35,20 @@ function validateFile(file: File): string | undefined {
 export function ResumeUploadCard({ onUploaded }: ResumeUploadCardProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
+  const { run: uploadResume, isSubmitting: isUploading, error: uploadError } = useUploadResume();
+  const error = validationError ?? uploadError;
 
   function handleFileChosen(file: File | undefined) {
     if (!file) return;
-    const validationError = validateFile(file);
-    if (validationError) {
-      setError(validationError);
+    const fileError = validateFile(file);
+    if (fileError) {
+      setValidationError(fileError);
       setSelectedFile(null);
       return;
     }
-    setError(null);
+    setValidationError(null);
     setSelectedFile(file);
   }
 
@@ -64,19 +64,14 @@ export function ResumeUploadCard({ onUploaded }: ResumeUploadCardProps) {
 
   async function handleUpload() {
     if (!selectedFile) return;
-    setError(null);
-    setIsUploading(true);
+    setValidationError(null);
     try {
-      await resumeService.uploadResume(selectedFile);
+      await uploadResume(selectedFile);
       setSelectedFile(null);
       if (inputRef.current) inputRef.current.value = "";
       onUploaded();
-    } catch (uploadError) {
-      setError(
-        uploadError instanceof ApiRequestError ? uploadError.message : "Unable to upload resume"
-      );
-    } finally {
-      setIsUploading(false);
+    } catch {
+      // Surfaced via uploadError above.
     }
   }
 

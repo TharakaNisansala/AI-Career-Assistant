@@ -8,9 +8,8 @@ import { Alert } from "@/components/ui/Alert";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Spinner } from "@/components/ui/Spinner";
 import { formatDate } from "@/lib/format";
-import { ApiRequestError } from "@/lib/apiClient";
 import { validateJobDescriptionText, validateJobTitle } from "@/lib/validation";
-import * as jobDescriptionService from "@/services/jobDescription.service";
+import { useSubmitJobDescription } from "@/hooks/useJobDescriptionActions";
 import type { JobDescription } from "@/types/api";
 
 interface JobDescriptionPanelProps {
@@ -39,8 +38,7 @@ export function JobDescriptionPanel({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
-  const [formError, setFormError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { run: submitJobDescription, isSubmitting, error: formError } = useSubmitJobDescription();
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -52,20 +50,14 @@ export function JobDescriptionPanel({
     setFieldErrors(errors);
     if (errors.title || errors.description) return;
 
-    setFormError(null);
-    setIsSubmitting(true);
     try {
-      const job = await jobDescriptionService.submitJobDescription({ title, description });
+      const job = await submitJobDescription({ title, description });
       setTitle("");
       setDescription("");
       setIsFormOpen(false);
       onCreated(job);
-    } catch (err) {
-      setFormError(
-        err instanceof ApiRequestError ? err.message : "Unable to submit job description"
-      );
-    } finally {
-      setIsSubmitting(false);
+    } catch {
+      // Surfaced via formError above.
     }
   }
 

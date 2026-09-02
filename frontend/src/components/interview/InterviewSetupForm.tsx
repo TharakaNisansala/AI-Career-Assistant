@@ -6,8 +6,7 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { ApiRequestError } from "@/lib/apiClient";
-import * as interviewService from "@/services/interview.service";
+import { useGenerateInterviewSession } from "@/hooks/useInterviewActions";
 import type { InterviewSession, JobDescription, Resume } from "@/types/api";
 
 interface InterviewSetupFormProps {
@@ -24,31 +23,28 @@ export function InterviewSetupForm({
   const [resumeId, setResumeId] = useState("");
   const [jobId, setJobId] = useState("");
   const [targetRole, setTargetRole] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const { run: generateInterviewSession, isSubmitting, error: submitError } =
+    useGenerateInterviewSession();
+  const error = validationError ?? submitError;
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     if (!resumeId) {
-      setError("Select a resume to generate interview questions");
+      setValidationError("Select a resume to generate interview questions");
       return;
     }
 
-    setError(null);
-    setIsSubmitting(true);
+    setValidationError(null);
     try {
-      const session = await interviewService.generateInterviewSession({
+      const session = await generateInterviewSession({
         resumeId,
         jobId: jobId || undefined,
         targetRole: targetRole.trim() || undefined,
       });
       onCreated(session);
-    } catch (err) {
-      setError(
-        err instanceof ApiRequestError ? err.message : "Unable to generate interview questions"
-      );
-    } finally {
-      setIsSubmitting(false);
+    } catch {
+      // Surfaced via submitError above.
     }
   }
 

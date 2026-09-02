@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
@@ -7,8 +7,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Spinner } from "@/components/ui/Spinner";
 import { Modal } from "@/components/ui/Modal";
 import { formatDate, formatFileSize } from "@/lib/format";
-import { ApiRequestError } from "@/lib/apiClient";
-import * as resumeService from "@/services/resume.service";
+import { useDeleteResume } from "@/hooks/useResumeActions";
 import type { Resume } from "@/types/api";
 
 interface ResumeListCardProps {
@@ -19,22 +18,19 @@ interface ResumeListCardProps {
 }
 
 export function ResumeListCard({ resumes, isLoading, error, onChanged }: ResumeListCardProps) {
+  const navigate = useNavigate();
   const [pendingDelete, setPendingDelete] = useState<Resume | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const { run: deleteResume, isSubmitting: isDeleting, error: deleteError, reset: resetDeleteError } =
+    useDeleteResume();
 
   async function confirmDelete() {
     if (!pendingDelete) return;
-    setIsDeleting(true);
-    setDeleteError(null);
     try {
-      await resumeService.deleteResume(pendingDelete.resumeId);
+      await deleteResume(pendingDelete.resumeId);
       setPendingDelete(null);
       onChanged();
-    } catch (err) {
-      setDeleteError(err instanceof ApiRequestError ? err.message : "Unable to delete resume");
-    } finally {
-      setIsDeleting(false);
+    } catch {
+      // Surfaced via deleteError above.
     }
   }
 
@@ -72,16 +68,18 @@ export function ResumeListCard({ resumes, isLoading, error, onChanged }: ResumeL
                 </p>
               </div>
               <div className="flex shrink-0 gap-2">
-                <Link to={`/resumes/${resume.resumeId}/analysis`}>
-                  <Button size="sm" variant="secondary">
-                    Analyze
-                  </Button>
-                </Link>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => navigate(`/resumes/${resume.resumeId}/analysis`)}
+                >
+                  Analyze
+                </Button>
                 <Button
                   size="sm"
                   variant="danger"
                   onClick={() => {
-                    setDeleteError(null);
+                    resetDeleteError();
                     setPendingDelete(resume);
                   }}
                 >
