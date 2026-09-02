@@ -41,9 +41,17 @@ export interface UploadResumeResponse {
   resume: Resume;
 }
 
+export interface PaginationMeta {
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+}
+
 export interface ListResumesResponse {
   status: "success";
   resumes: Resume[];
+  pagination: PaginationMeta;
 }
 
 export interface ResumeTextResponse {
@@ -101,6 +109,7 @@ export interface AnalyzeResumeResponse {
 export interface AnalysisHistoryResponse {
   status: "success";
   analyses: ResumeAnalysis[];
+  pagination: PaginationMeta;
 }
 
 export interface JobDescription {
@@ -119,6 +128,7 @@ export interface SubmitJobDescriptionResponse {
 export interface ListJobDescriptionsResponse {
   status: "success";
   jobDescriptions: JobDescription[];
+  pagination: PaginationMeta;
 }
 
 export interface JobMatch {
@@ -143,6 +153,7 @@ export interface RunJobMatchResponse {
 export interface JobMatchHistoryResponse {
   status: "success";
   matches: JobMatch[];
+  pagination: PaginationMeta;
 }
 
 export type InterviewQuestionType = "technical" | "behavioral";
@@ -172,6 +183,7 @@ export interface GenerateInterviewSessionResponse {
 export interface ListInterviewSessionsResponse {
   status: "success";
   sessions: InterviewSession[];
+  pagination: PaginationMeta;
 }
 
 export interface InterviewAnswer {

@@ -3,6 +3,7 @@ const {
   listJobDescriptionsForUser,
 } = require("../services/jobDescription.service");
 const { validateJobDescriptionInput } = require("../utils/jobDescriptionValidation");
+const { parsePagination, buildPaginationMeta } = require("../utils/pagination");
 
 function serializeJobDescription(job) {
   return {
@@ -39,9 +40,15 @@ async function submitJobDescription(req, res) {
 }
 
 async function listJobDescriptions(req, res) {
+  const { page, pageSize, limit, offset } = parsePagination(req.query);
+
   try {
-    const jobs = await listJobDescriptionsForUser(req.user.userId);
-    res.json({ status: "success", jobDescriptions: jobs.map(serializeJobDescription) });
+    const { rows, totalItems } = await listJobDescriptionsForUser(req.user.userId, { limit, offset });
+    res.json({
+      status: "success",
+      jobDescriptions: rows.map(serializeJobDescription),
+      pagination: buildPaginationMeta({ page, pageSize, totalItems }),
+    });
   } catch (error) {
     console.error("Listing job descriptions failed:", error.message);
     res.status(500).json({ status: "error", message: "Unable to fetch job descriptions" });

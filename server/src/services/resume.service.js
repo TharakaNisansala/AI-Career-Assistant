@@ -20,15 +20,18 @@ async function createResume({ userId, file }) {
   }
 }
 
-async function listResumesForUser(userId) {
+async function listResumesForUser(userId, { limit, offset } = {}) {
   const result = await pool.query(
-    `SELECT resume_id, original_file_name, file_size, mime_type, uploaded_at
+    `SELECT resume_id, original_file_name, file_size, mime_type, uploaded_at,
+            COUNT(*) OVER() AS total_count
      FROM resumes
      WHERE user_id = $1
-     ORDER BY uploaded_at DESC`,
-    [userId]
+     ORDER BY uploaded_at DESC
+     LIMIT $2 OFFSET $3`,
+    [userId, limit, offset]
   );
-  return result.rows;
+  const totalItems = result.rows[0] ? Number(result.rows[0].total_count) : 0;
+  return { rows: result.rows.map(({ total_count, ...row }) => row), totalItems };
 }
 
 async function findResumeById(resumeId) {

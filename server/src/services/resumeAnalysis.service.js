@@ -62,15 +62,18 @@ async function saveAnalysis({ resumeId, atsScore, breakdown, extracted }) {
   return result.rows[0];
 }
 
-async function listAnalysesForResume(resumeId) {
+async function listAnalysesForResume(resumeId, { limit, offset } = {}) {
   const result = await pool.query(
-    `SELECT analysis_id, resume_id, ats_score, score_breakdown, summary, strengths, weaknesses, skills, education, experience, recommendations, created_at
+    `SELECT analysis_id, resume_id, ats_score, score_breakdown, summary, strengths, weaknesses, skills, education, experience, recommendations, created_at,
+            COUNT(*) OVER() AS total_count
      FROM resume_analyses
      WHERE resume_id = $1
-     ORDER BY created_at DESC`,
-    [resumeId]
+     ORDER BY created_at DESC
+     LIMIT $2 OFFSET $3`,
+    [resumeId, limit, offset]
   );
-  return result.rows;
+  const totalItems = result.rows[0] ? Number(result.rows[0].total_count) : 0;
+  return { rows: result.rows.map(({ total_count, ...row }) => row), totalItems };
 }
 
 module.exports = { requestAiAnalysis, saveAnalysis, listAnalysesForResume };

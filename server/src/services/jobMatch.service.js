@@ -70,15 +70,18 @@ async function saveJobMatch({
   return result.rows[0];
 }
 
-async function listJobMatches({ jobId, resumeId }) {
+async function listJobMatches({ jobId, resumeId, limit, offset }) {
   const result = await pool.query(
-    `SELECT match_id, job_id, resume_id, match_percentage, score_breakdown, matched_skills, missing_skills, strengths, recommendations, created_at
+    `SELECT match_id, job_id, resume_id, match_percentage, score_breakdown, matched_skills, missing_skills, strengths, recommendations, created_at,
+            COUNT(*) OVER() AS total_count
      FROM job_matches
      WHERE job_id = $1 AND resume_id = $2
-     ORDER BY created_at DESC`,
-    [jobId, resumeId]
+     ORDER BY created_at DESC
+     LIMIT $3 OFFSET $4`,
+    [jobId, resumeId, limit, offset]
   );
-  return result.rows;
+  const totalItems = result.rows[0] ? Number(result.rows[0].total_count) : 0;
+  return { rows: result.rows.map(({ total_count, ...row }) => row), totalItems };
 }
 
 module.exports = { requestAiJobRequirements, saveJobMatch, listJobMatches };

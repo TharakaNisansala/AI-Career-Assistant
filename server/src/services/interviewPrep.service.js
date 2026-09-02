@@ -106,15 +106,18 @@ async function createSession({ userId, resumeId, jobId, targetRole, questions })
   return result.rows[0];
 }
 
-async function listSessionsForUser(userId) {
+async function listSessionsForUser(userId, { limit, offset } = {}) {
   const result = await pool.query(
-    `SELECT session_id, user_id, resume_id, job_id, target_role, questions, created_at
+    `SELECT session_id, user_id, resume_id, job_id, target_role, questions, created_at,
+            COUNT(*) OVER() AS total_count
      FROM interview_sessions
      WHERE user_id = $1
-     ORDER BY created_at DESC`,
-    [userId]
+     ORDER BY created_at DESC
+     LIMIT $2 OFFSET $3`,
+    [userId, limit, offset]
   );
-  return result.rows;
+  const totalItems = result.rows[0] ? Number(result.rows[0].total_count) : 0;
+  return { rows: result.rows.map(({ total_count, ...row }) => row), totalItems };
 }
 
 async function findSessionById(sessionId) {

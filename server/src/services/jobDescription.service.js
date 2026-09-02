@@ -10,15 +10,18 @@ async function createJobDescription({ userId, title, description }) {
   return result.rows[0];
 }
 
-async function listJobDescriptionsForUser(userId) {
+async function listJobDescriptionsForUser(userId, { limit, offset } = {}) {
   const result = await pool.query(
-    `SELECT job_id, title, description, created_at
+    `SELECT job_id, title, description, created_at,
+            COUNT(*) OVER() AS total_count
      FROM job_descriptions
      WHERE user_id = $1
-     ORDER BY created_at DESC`,
-    [userId]
+     ORDER BY created_at DESC
+     LIMIT $2 OFFSET $3`,
+    [userId, limit, offset]
   );
-  return result.rows;
+  const totalItems = result.rows[0] ? Number(result.rows[0].total_count) : 0;
+  return { rows: result.rows.map(({ total_count, ...row }) => row), totalItems };
 }
 
 async function findJobDescriptionById(jobId) {

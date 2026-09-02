@@ -1,12 +1,6 @@
 const { findResumeById } = require("../services/resume.service");
 const { findJobDescriptionById } = require("../services/jobDescription.service");
-const { extractResumeText, ResumeFileMissingError } = require("../services/resumeExtraction.service");
-const {
-  EmptyDocumentError,
-  CorruptedDocumentError,
-  UnsupportedMimeTypeError,
-  DocumentTooLargeError,
-} = require("../utils/textExtraction.utils");
+const { extractResumeText } = require("../services/resumeExtraction.service");
 const { requestAiAnalysis } = require("../services/resumeAnalysis.service");
 const { requestAiJobRequirements } = require("../services/jobMatch.service");
 const {
@@ -18,18 +12,14 @@ const {
   saveAnswer,
   listAnswersForSession,
 } = require("../services/interviewPrep.service");
-const { AIResponseValidationError } = require("../utils/analysisValidation");
 const {
   validateAnswerSubmissionInput,
   validateTargetRole,
 } = require("../utils/interviewValidation");
-const {
-  AIConfigurationError,
-  AITimeoutError,
-  AIRateLimitError,
-  AIProviderError,
-} = require("../services/ai/errors");
 const { isValidUUID } = require("../utils/validators");
+const { assertOwned } = require("../utils/ownership");
+const { handleControllerError } = require("../utils/controllerErrorHandling");
+const { parsePagination, buildPaginationMeta } = require("../utils/pagination");
 
 function serializeSession(session) {
   return {
@@ -58,48 +48,6 @@ function serializeAnswer(answer) {
   };
 }
 
-// Mirrors resumeAnalysis.controller.js/jobMatch.controller.js's error
-// cascade: interview prep goes through the same resume-extraction and AI
-// transport/validation pipeline, so the same mapping to HTTP codes applies.
-function handleInterviewError(error, res, fallbackMessage) {
-  if (
-    error instanceof EmptyDocumentError ||
-    error instanceof CorruptedDocumentError ||
-    error instanceof DocumentTooLargeError
-  ) {
-    return res.status(422).json({ status: "error", message: error.message });
-  }
-  if (error instanceof UnsupportedMimeTypeError) {
-    return res.status(415).json({ status: "error", message: error.message });
-  }
-  if (error instanceof ResumeFileMissingError) {
-    return res.status(404).json({ status: "error", message: error.message });
-  }
-  if (error instanceof AIConfigurationError) {
-    console.error("AI service misconfigured:", error.message);
-    return res.status(500).json({ status: "error", message: "AI service is not configured" });
-  }
-  if (error instanceof AITimeoutError) {
-    return res.status(504).json({ status: "error", message: "AI service request timed out" });
-  }
-  if (error instanceof AIRateLimitError) {
-    return res
-      .status(429)
-      .json({ status: "error", message: "AI service rate limit exceeded, please retry later" });
-  }
-  if (error instanceof AIResponseValidationError) {
-    console.error("AI returned a malformed interview prep response:", error.message);
-    return res.status(502).json({ status: "error", message: "AI service returned an invalid result" });
-  }
-  if (error instanceof AIProviderError) {
-    console.error("AI provider error:", error.message);
-    return res.status(502).json({ status: "error", message: "AI provider returned an error" });
-  }
-
-  console.error(fallbackMessage, error.message);
-  res.status(500).json({ status: "error", message: fallbackMessage });
-}
-
 // Pipeline: verify ownership of the resume (and job description, if given)
 // -> extract resume text -> ask the AI for resume facts (reusing
 // resumeAnalysis.service.js) and, if a job was selected, job requirements
@@ -121,18 +69,11 @@ async function generateInterviewSession(req, res) {
   }
 
   try {
-    const resume = await findResumeById(resumeId);
-    // Same not-found-vs-not-yours ambiguity used elsewhere: both return 404.
-    if (!resume || resume.user_id !== req.user.userId) {
-      return res.status(404).json({ status: "error", message: "Resume not found" });
-    }
+    const resume = assertOwned(await findResumeById(resumeId), req.user.userId, "Resume not found");
 
     let job = null;
     if (jobId) {
-      job = await findJobDescriptionById(jobId);
-      if (!job || job.user_id !== req.user.userId) {
-        return res.status(404).json({ status: "error", message: "Job description not found" });
-      }
+      job = assertOwned(await findJobDescriptionById(jobId), req.user.userId, "Job description not found");
     }
 
     const resumeText = await extractResumeText(resume);
@@ -161,14 +102,20 @@ async function generateInterviewSession(req, res) {
       session: serializeSession(session),
     });
   } catch (error) {
-    handleInterviewError(error, res, "Unable to generate interview questions");
+    handleControllerError(error, res, "Unable to generate interview questions");
   }
 }
 
 async function getInterviewSessions(req, res) {
+  const { page, pageSize, limit, offset } = parsePagination(req.query);
+
   try {
-    const sessions = await listSessionsForUser(req.user.userId);
-    res.json({ status: "success", sessions: sessions.map(serializeSession) });
+    const { rows, totalItems } = await listSessionsForUser(req.user.userId, { limit, offset });
+    res.json({
+      status: "success",
+      sessions: rows.map(serializeSession),
+      pagination: buildPaginationMeta({ page, pageSize, totalItems }),
+    });
   } catch (error) {
     console.error("Fetching interview session history failed:", error.message);
     res.status(500).json({ status: "error", message: "Unable to fetch interview session history" });
@@ -183,10 +130,7 @@ async function getInterviewSession(req, res) {
   }
 
   try {
-    const session = await findSessionById(sessionId);
-    if (!session || session.user_id !== req.user.userId) {
-      return res.status(404).json({ status: "error", message: "Interview session not found" });
-    }
+    const session = assertOwned(await findSessionById(sessionId), req.user.userId, "Interview session not found");
 
     const answers = await listAnswersForSession(sessionId);
     res.json({
@@ -195,8 +139,7 @@ async function getInterviewSession(req, res) {
       answers: answers.map(serializeAnswer),
     });
   } catch (error) {
-    console.error("Fetching interview session failed:", error.message);
-    res.status(500).json({ status: "error", message: "Unable to fetch interview session" });
+    handleControllerError(error, res, "Unable to fetch interview session");
   }
 }
 
@@ -218,10 +161,7 @@ async function submitInterviewAnswer(req, res) {
   const { questionId, answerText } = req.body;
 
   try {
-    const session = await findSessionById(sessionId);
-    if (!session || session.user_id !== req.user.userId) {
-      return res.status(404).json({ status: "error", message: "Interview session not found" });
-    }
+    const session = assertOwned(await findSessionById(sessionId), req.user.userId, "Interview session not found");
 
     const question = session.questions.find((q) => q.questionId === questionId);
     if (!question) {
@@ -253,7 +193,7 @@ async function submitInterviewAnswer(req, res) {
       answer: serializeAnswer(answer),
     });
   } catch (error) {
-    handleInterviewError(error, res, "Unable to evaluate interview answer");
+    handleControllerError(error, res, "Unable to evaluate interview answer");
   }
 }
 
