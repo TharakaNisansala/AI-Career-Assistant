@@ -16,13 +16,17 @@ export function InterviewPrepPage() {
   const navigate = useNavigate();
 
   const fetchResumes = useCallback(() => resumeService.listResumes(), []);
-  const { data: resumes } = useAsync(fetchResumes);
+  const { data: resumes } = useAsync(fetchResumes, [], "resumes-list");
 
   const fetchJobs = useCallback(() => jobDescriptionService.listJobDescriptions(), []);
-  const { data: jobDescriptions } = useAsync(fetchJobs);
+  const { data: jobDescriptions } = useAsync(fetchJobs, [], "job-descriptions-list");
 
   const fetchSessions = useCallback(() => interviewService.listInterviewSessions(), []);
-  const { data: sessions, isLoading, error } = useAsync(fetchSessions);
+  const { data: sessions, isLoading, error } = useAsync(
+    fetchSessions,
+    [],
+    "interview-sessions-list"
+  );
 
   return (
     <div>

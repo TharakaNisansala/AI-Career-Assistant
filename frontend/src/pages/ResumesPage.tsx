@@ -7,7 +7,7 @@ import * as resumeService from "@/services/resume.service";
 
 export function ResumesPage() {
   const fetchResumes = useCallback(() => resumeService.listResumes(), []);
-  const { data: resumes, error, isLoading, refetch } = useAsync(fetchResumes);
+  const { data: resumes, error, isLoading, refetch } = useAsync(fetchResumes, [], "resumes-list");
 
   return (
     <div>

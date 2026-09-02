@@ -15,7 +15,7 @@ import * as analysisService from "@/services/analysis.service";
 
 export function AnalysisHistoryPage() {
   const fetchResumes = useCallback(() => resumeService.listResumes(), []);
-  const { data: resumes, isLoading: isLoadingResumes } = useAsync(fetchResumes);
+  const { data: resumes, isLoading: isLoadingResumes } = useAsync(fetchResumes, [], "resumes-list");
 
   const [selectedResumeId, setSelectedResumeId] = useState<string | null>(null);
   const [expandedAnalysisId, setExpandedAnalysisId] = useState<string | null>(null);
@@ -26,7 +26,11 @@ export function AnalysisHistoryPage() {
     if (!effectiveResumeId) return Promise.resolve([]);
     return analysisService.getAnalysisHistory(effectiveResumeId);
   }, [effectiveResumeId]);
-  const { data: history, error, isLoading } = useAsync(fetchHistory, [effectiveResumeId]);
+  const { data: history, error, isLoading } = useAsync(
+    fetchHistory,
+    [effectiveResumeId],
+    effectiveResumeId ? `analysis-history:${effectiveResumeId}` : undefined
+  );
 
   const expandedAnalysis = useMemo(
     () => history?.find((a) => a.analysisId === expandedAnalysisId) ?? null,

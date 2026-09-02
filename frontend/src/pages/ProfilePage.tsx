@@ -12,10 +12,10 @@ export function ProfilePage() {
   const { user, logout } = useAuth();
 
   const fetchResumes = useCallback(() => resumeService.listResumes(), []);
-  const { data: resumes } = useAsync(fetchResumes);
+  const { data: resumes } = useAsync(fetchResumes, [], "resumes-list");
 
   const fetchSessions = useCallback(() => interviewService.listInterviewSessions(), []);
-  const { data: sessions } = useAsync(fetchSessions);
+  const { data: sessions } = useAsync(fetchSessions, [], "interview-sessions-list");
 
   return (
     <div>

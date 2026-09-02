@@ -20,7 +20,7 @@ export function ResumeAnalysisPage() {
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
 
   const fetchResumes = useCallback(() => resumeService.listResumes(), []);
-  const { data: resumes } = useAsync(fetchResumes);
+  const { data: resumes } = useAsync(fetchResumes, [], "resumes-list");
   const resume = useMemo(
     () => resumes?.find((r) => r.resumeId === resumeId) ?? null,
     [resumes, resumeId]
@@ -30,7 +30,11 @@ export function ResumeAnalysisPage() {
     if (!resumeId) return Promise.resolve([]);
     return analysisService.getAnalysisHistory(resumeId);
   }, [resumeId]);
-  const { data: history, error, isLoading, refetch } = useAsync(fetchHistory, [resumeId]);
+  const { data: history, error, isLoading, refetch } = useAsync(
+    fetchHistory,
+    [resumeId],
+    resumeId ? `analysis-history:${resumeId}` : undefined
+  );
 
   const selectedAnalysis = useMemo(() => {
     if (!history || history.length === 0) return null;

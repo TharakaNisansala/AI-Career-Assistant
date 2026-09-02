@@ -23,10 +23,10 @@ export function JobMatchingPage() {
     isLoading: isLoadingJobs,
     error: jobsError,
     refetch: refetchJobs,
-  } = useAsync(fetchJobDescriptions);
+  } = useAsync(fetchJobDescriptions, [], "job-descriptions-list");
 
   const fetchResumes = useCallback(() => resumeService.listResumes(), []);
-  const { data: resumes, isLoading: isLoadingResumes } = useAsync(fetchResumes);
+  const { data: resumes, isLoading: isLoadingResumes } = useAsync(fetchResumes, [], "resumes-list");
 
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [selectedResumeId, setSelectedResumeId] = useState<string>("");
@@ -38,10 +38,11 @@ export function JobMatchingPage() {
     if (!selectedJobId || !selectedResumeId) return Promise.resolve([]);
     return jobMatchService.getJobMatchHistory(selectedJobId, selectedResumeId);
   }, [selectedJobId, selectedResumeId]);
-  const { data: history, refetch: refetchHistory } = useAsync(fetchHistory, [
-    selectedJobId,
-    selectedResumeId,
-  ]);
+  const { data: history, refetch: refetchHistory } = useAsync(
+    fetchHistory,
+    [selectedJobId, selectedResumeId],
+    selectedJobId && selectedResumeId ? `job-match-history:${selectedJobId}:${selectedResumeId}` : undefined
+  );
 
   const selectedJobTitle = useMemo(
     () => jobDescriptions?.find((j) => j.jobId === selectedJobId)?.title,

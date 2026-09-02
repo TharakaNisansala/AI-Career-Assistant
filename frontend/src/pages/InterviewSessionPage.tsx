@@ -16,7 +16,11 @@ export function InterviewSessionPage() {
     if (!sessionId) return Promise.reject(new Error("Missing session id"));
     return interviewService.getInterviewSession(sessionId);
   }, [sessionId]);
-  const { data, error, isLoading } = useAsync(fetchSession, [sessionId]);
+  const { data, error, isLoading } = useAsync(
+    fetchSession,
+    [sessionId],
+    sessionId ? `interview-session:${sessionId}` : undefined
+  );
 
   const [localAnswers, setLocalAnswers] = useState<Record<string, InterviewAnswer>>({});
 
