@@ -3,6 +3,7 @@ import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { NAV_ITEMS } from "@/lib/navigation";
 import { Button } from "@/components/ui/Button";
+import { ErrorBoundary } from "@/components/layout/ErrorBoundary";
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   return (
@@ -89,7 +90,11 @@ export function AppLayout() {
 
         <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-6xl">
-            <Outlet />
+            {/* Scoped to page content so a crash on one page leaves the nav
+                sidebar/header (and the ability to navigate elsewhere) intact. */}
+            <ErrorBoundary>
+              <Outlet />
+            </ErrorBoundary>
           </div>
         </main>
       </div>
