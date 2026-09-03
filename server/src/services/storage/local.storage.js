@@ -5,24 +5,22 @@ const UPLOAD_DIR = process.env.UPLOAD_DIR
   ? path.resolve(process.env.UPLOAD_DIR)
   : path.join(__dirname, "../../../uploads/resumes");
 
-async function ensureUploadDir() {
-  await fs.mkdir(UPLOAD_DIR, { recursive: true });
+function resolveKeyPath(storageKey) {
+  return path.join(UPLOAD_DIR, storageKey);
 }
 
-// Returns the storage key the caller should persist (e.g. in the DB),
-// not an absolute path, so callers stay portable to a future driver
-// that keys files under an S3 bucket instead of a local directory.
-async function saveFile(buffer, safeFileName) {
-  await ensureUploadDir();
-  const destination = path.join(UPLOAD_DIR, safeFileName);
+// storageKey may include a userId/ prefix (see file.utils.js), so the parent
+// directory has to be created on demand rather than just once at startup.
+async function saveFile(buffer, storageKey) {
+  const destination = resolveKeyPath(storageKey);
+  await fs.mkdir(path.dirname(destination), { recursive: true });
   await fs.writeFile(destination, buffer);
-  return safeFileName;
+  return storageKey;
 }
 
 async function deleteFile(storageKey) {
-  const target = path.join(UPLOAD_DIR, storageKey);
   try {
-    await fs.unlink(target);
+    await fs.unlink(resolveKeyPath(storageKey));
   } catch (error) {
     if (error.code !== "ENOENT") {
       throw error;
@@ -30,8 +28,8 @@ async function deleteFile(storageKey) {
   }
 }
 
-function getAbsolutePath(storageKey) {
-  return path.join(UPLOAD_DIR, storageKey);
+async function readFile(storageKey) {
+  return fs.readFile(resolveKeyPath(storageKey));
 }
 
-module.exports = { saveFile, deleteFile, getAbsolutePath, UPLOAD_DIR };
+module.exports = { saveFile, deleteFile, readFile, UPLOAD_DIR };

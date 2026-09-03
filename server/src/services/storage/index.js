@@ -1,19 +1,20 @@
-// Storage driver seam: every driver must expose saveFile(buffer, safeFileName)
-// and deleteFile(storageKey), keyed by the STORAGE_DRIVER env var. Swapping to
-// cloud storage later means adding a new driver module here (e.g. s3.storage.js)
-// and pointing STORAGE_DRIVER at it -- callers never change.
-const localStorage = require("./local.storage");
-
+// Storage driver seam: every driver must expose saveFile(buffer, storageKey),
+// deleteFile(storageKey) and readFile(storageKey), keyed by the
+// STORAGE_DRIVER env var. Callers never touch a driver module directly, so
+// swapping STORAGE_DRIVER (e.g. back to "local" for dev) needs no code change.
 const STORAGE_DRIVER = process.env.STORAGE_DRIVER || "local";
 
-const drivers = {
-  local: localStorage,
+// Loaded lazily so selecting "local" never requires Supabase env vars to be
+// set (supabase.storage.js throws at require-time if they're missing).
+const driverLoaders = {
+  local: () => require("./local.storage"),
+  supabase: () => require("./supabase.storage"),
 };
 
-const activeDriver = drivers[STORAGE_DRIVER];
+const loadDriver = driverLoaders[STORAGE_DRIVER];
 
-if (!activeDriver) {
+if (!loadDriver) {
   throw new Error(`Unsupported STORAGE_DRIVER: ${STORAGE_DRIVER}`);
 }
 
-module.exports = activeDriver;
+module.exports = loadDriver();

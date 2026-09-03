@@ -4,7 +4,8 @@ const { generateSafeFileName } = require("../utils/file.utils");
 
 async function createResume({ userId, file }) {
   const safeFileName = generateSafeFileName(file.originalname);
-  const storageKey = await storage.saveFile(file.buffer, safeFileName);
+  const storageKey = `${userId}/${safeFileName}`;
+  await storage.saveFile(file.buffer, storageKey, { contentType: file.mimetype });
 
   try {
     const result = await pool.query(

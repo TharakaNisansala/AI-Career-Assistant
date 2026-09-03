@@ -8,11 +8,15 @@ test("generateSafeFileName preserves the lowercased extension", () => {
   assert.equal(path.extname(generateSafeFileName("cover-letter.docx")), ".docx");
 });
 
-test("generateSafeFileName never reuses the original file name", () => {
+test("generateSafeFileName strips directory traversal from the original name", () => {
   const name = generateSafeFileName("../../etc/passwd.pdf");
   assert.ok(!name.includes(".."));
   assert.ok(!name.includes("/"));
-  assert.ok(!name.includes("passwd"));
+});
+
+test("generateSafeFileName keeps a sanitized trace of the original stem", () => {
+  const name = generateSafeFileName("My Resume (final).pdf");
+  assert.match(name, /My_Resume__final_\.pdf$/);
 });
 
 test("generateSafeFileName produces unique names on repeated calls", () => {
@@ -24,5 +28,8 @@ test("generateSafeFileName produces unique names on repeated calls", () => {
 
 test("generateSafeFileName only contains safe characters", () => {
   const name = generateSafeFileName("resume.pdf");
-  assert.match(name, /^[0-9]+-[0-9a-f]{32}\.pdf$/);
+  assert.match(
+    name,
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-resume\.pdf$/
+  );
 });

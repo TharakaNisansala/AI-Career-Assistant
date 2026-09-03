@@ -1,4 +1,3 @@
-const fs = require("fs/promises");
 const storage = require("./storage");
 const { extractText } = require("../utils/textExtraction.utils");
 
@@ -16,11 +15,9 @@ class ResumeFileMissingError extends Error {
 // truth, so re-deriving text from it on each call avoids keeping a second,
 // potentially stale copy of the resume's content in the database.
 async function extractResumeText(resume) {
-  const absolutePath = storage.getAbsolutePath(resume.file_path);
-
   let buffer;
   try {
-    buffer = await fs.readFile(absolutePath);
+    buffer = await storage.readFile(resume.file_path);
   } catch (error) {
     if (error.code === "ENOENT") {
       throw new ResumeFileMissingError("The resume file could not be found in storage");

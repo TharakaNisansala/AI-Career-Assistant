@@ -1,10 +1,26 @@
 const crypto = require("crypto");
 const path = require("path");
 
+// Keeps a recognizable trace of the original name in the stored key (so a
+// user's bucket listing/console view is legible) while stripping directory
+// separators and repeated dots so it can never escape its own storage key.
+function sanitizeStem(stem) {
+  const sanitized = stem
+    .replace(/[^a-zA-Z0-9._-]/g, "_")
+    .replace(/\.{2,}/g, "_")
+    .replace(/^[._-]+/, "");
+  return sanitized || "file";
+}
+
+// Produces a unique, storage-safe file name that keeps the original name's
+// (sanitized) stem and lowercased extension, e.g. "resume.PDF" ->
+// "3d9c...-resume.pdf". The uuid prefix guarantees uniqueness even when two
+// users upload files with the same name.
 function generateSafeFileName(originalName) {
-  const extension = path.extname(originalName || "").toLowerCase();
-  const uniqueId = crypto.randomBytes(16).toString("hex");
-  return `${Date.now()}-${uniqueId}${extension}`;
+  const base = path.basename(String(originalName || "file"));
+  const extension = path.extname(base).toLowerCase();
+  const stem = sanitizeStem(path.basename(base, path.extname(base)));
+  return `${crypto.randomUUID()}-${stem}${extension}`;
 }
 
 const PDF_SIGNATURE = Buffer.from("%PDF-", "latin1");
