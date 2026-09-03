@@ -108,9 +108,12 @@ Getting Started
 
 Backend (server/):
 1. `cd server && npm install`
-2. Copy `.env.example` to `.env` and fill in `DATABASE_URL` (a Supabase
-   Postgres connection string), `JWT_SECRET`, and an AI provider key
-   (`AI_PROVIDER` + `AI_API_KEY`)
+2. Copy `.env.example` to `.env` and fill in `DATABASE_URL` (Supabase's
+   pooler connection, port 6543 -- used by the app at runtime), `DIRECT_URL`
+   (Supabase's direct connection, port 5432 -- used only by migrations,
+   since PgBouncer's transaction pooling mode doesn't reliably support the
+   prepared statements / session-level DDL that node-pg-migrate needs),
+   `JWT_SECRET`, and an AI provider key (`AI_PROVIDER` + `AI_API_KEY`)
 3. `npm run migrate` -- applies the schema via node-pg-migrate
 4. `npm run dev` -- starts the API on `PORT` (default 5000)
 

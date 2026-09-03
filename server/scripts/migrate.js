@@ -5,8 +5,8 @@ const { runner } = require("node-pg-migrate");
 
 const direction = process.argv[2] === "down" ? "down" : "up";
 
-if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL is not set. Add it to server/.env before running migrations.");
+if (!process.env.DIRECT_URL) {
+  throw new Error("DIRECT_URL is not set. Add it to server/.env before running migrations.");
 }
 
 // Reuses the same pinned Supabase root CA as src/config/database.js so
@@ -18,7 +18,10 @@ const ca = fs.readFileSync(
 
 runner({
   databaseUrl: {
-    connectionString: process.env.DATABASE_URL,
+    // Direct connection, not the pooler: PgBouncer's transaction pooling
+    // mode doesn't reliably support the prepared statements / session-level
+    // DDL that node-pg-migrate needs.
+    connectionString: process.env.DIRECT_URL,
     ssl: { ca, rejectUnauthorized: true },
   },
   dir: path.join(__dirname, "..", "migrations"),
