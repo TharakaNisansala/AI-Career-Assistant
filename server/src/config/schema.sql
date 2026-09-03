@@ -23,9 +23,10 @@ CREATE TABLE IF NOT EXISTS revoked_tokens (
 );
 
 -- Resumes table (docs/Database_Design.md section 4.2)
--- file_path stores a storage-driver-specific key (local filename today, an
--- object key if this moves to cloud storage later), not a filesystem path,
--- so the DB row stays portable across storage backends.
+-- file_path stores a storage-driver-specific key (a Supabase Storage object
+-- key of the form "<userId>/<uuid>-<filename>" today, a local disk path
+-- under UPLOAD_DIR if STORAGE_DRIVER=local), not a filesystem path, so the
+-- DB row stays portable across storage backends.
 CREATE TABLE IF NOT EXISTS resumes (
   resume_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
