@@ -107,4 +107,13 @@ async function startServer() {
   });
 }
 
-startServer();
+// Only bind a port when this file is run directly (`node src/server.js` /
+// `npm start`). Vercel's Node runtime instead requires this module (see
+// api/index.js) and calls the exported Express app as a request handler, so
+// listening here would be unused and would keep a serverless invocation
+// alive indefinitely.
+if (require.main === module) {
+  startServer();
+}
+
+module.exports = app;
