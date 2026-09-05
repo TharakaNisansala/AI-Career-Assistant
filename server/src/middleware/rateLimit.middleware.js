@@ -5,7 +5,7 @@ const authRateLimiter = rateLimit({
   limit: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: "Too many attempts, please try again later" },
+  message: { status: "error", message: "Too many attempts, please try again later" },
   skip: () => process.env.NODE_ENV === "test",
 });
 
@@ -17,7 +17,7 @@ const apiRateLimiter = rateLimit({
   limit: 300,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: "Too many requests, please try again later" },
+  message: { status: "error", message: "Too many requests, please try again later" },
   skip: () => process.env.NODE_ENV === "test",
 });
 
@@ -29,7 +29,7 @@ const aiRateLimiter = rateLimit({
   limit: 30,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: "Too many AI requests, please try again later" },
+  message: { status: "error", message: "Too many AI requests, please try again later" },
   skip: () => process.env.NODE_ENV === "test",
 });
 
