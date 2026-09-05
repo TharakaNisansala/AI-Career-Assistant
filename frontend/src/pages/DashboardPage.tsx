@@ -1,4 +1,5 @@
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -14,11 +15,37 @@ import { formatDateTime } from "@/lib/format";
 export function DashboardPage() {
   const { user } = useAuth();
   const { data, error, isLoading } = useDashboardData();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Captured once from the one navigate() call RegisterPage.tsx makes right
+  // after a successful registration -- read into local state rather than
+  // derived from location.state on every render, because browsers persist
+  // history.state across a hard reload of the same entry (it isn't cleared
+  // just by refreshing). The effect below strips it from history right
+  // after mount so a later reload of "/" sees no state, which is what
+  // actually makes the "just registered" greeting a one-time, one-navigation
+  // thing instead of something a refresh could resurrect.
+  const [justRegistered] = useState(
+    () => Boolean((location.state as { justRegistered?: boolean } | null)?.justRegistered)
+  );
+
+  useEffect(() => {
+    if (justRegistered) {
+      navigate(location.pathname, { replace: true, state: null });
+    }
+    // Runs once on mount only -- re-running on every location change would
+    // fight react-router's own history updates.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const firstName = user ? user.name.split(" ")[0] : "";
+  const greeting = justRegistered ? `Welcome${firstName ? `, ${firstName}` : ""}!` : `Welcome back${firstName ? `, ${firstName}` : ""}`;
 
   return (
     <div>
       <PageHeader
-        title={`Welcome back${user ? `, ${user.name.split(" ")[0]}` : ""}`}
+        title={greeting}
         description="Here's a snapshot of your job search progress"
       />
 
