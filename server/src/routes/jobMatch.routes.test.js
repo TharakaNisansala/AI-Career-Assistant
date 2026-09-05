@@ -97,11 +97,13 @@ async function createJobDescription(baseUrl, token, title, description) {
   return response.json();
 }
 
-// Two AI calls happen per match: one for resume facts (resumeAnalysis
-// prompt, containing "Resume text:") and one for job requirements
-// (jobMatch prompt, containing "Job description:"). The fake server
+// Three AI calls happen per match: one for resume facts (resumeAnalysis
+// prompt, containing "Resume text:"), one for job requirements (jobMatch
+// prompt, containing "Job description:"), and -- only when the job
+// description yields any required/preferred skills -- one for the holistic
+// skill-fit evaluation (containing "holistic skill fit"). The fake server
 // inspects the outgoing prompt to return the right canned payload for each.
-async function withFakeAIProvider(resumeFactsPayload, jobRequirementsPayload, run) {
+async function withFakeAIProvider(resumeFactsPayload, jobRequirementsPayload, skillMatchPayload, run) {
   const server = http.createServer((req, res) => {
     let body = "";
     req.on("data", (chunk) => (body += chunk));
@@ -113,7 +115,14 @@ async function withFakeAIProvider(resumeFactsPayload, jobRequirementsPayload, ru
         parsed = {};
       }
       const userContent = parsed.messages?.[0]?.content || "";
-      const payload = userContent.includes("Job description:") ? jobRequirementsPayload : resumeFactsPayload;
+      let payload;
+      if (userContent.includes("Job description:")) {
+        payload = jobRequirementsPayload;
+      } else if (userContent.includes("holistic skill fit")) {
+        payload = skillMatchPayload;
+      } else {
+        payload = resumeFactsPayload;
+      }
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(
         JSON.stringify({
@@ -182,6 +191,22 @@ const MATCHING_JOB_REQUIREMENTS = {
   keywords: ["backend", "distributed"],
 };
 
+const STRONG_SKILL_MATCH = {
+  skillMatchScore: 100,
+  matchedSkills: ["Node.js", "PostgreSQL", "Docker", "AWS"],
+  partiallyCoveredSkills: [],
+  missingSkills: [],
+  overallAssessment: "Direct, strong match on every required and preferred skill.",
+};
+
+const WEAK_SKILL_MATCH = {
+  skillMatchScore: 0,
+  matchedSkills: [],
+  partiallyCoveredSkills: [],
+  missingSkills: ["Node.js", "PostgreSQL", "Docker", "AWS"],
+  overallAssessment: "No relevant backend skills or transferable experience found; candidate's background is in graphic design.",
+};
+
 async function setupOwnerWithResume(baseUrl, emailPrefix, resumeText) {
   const suffix = crypto.randomBytes(4).toString("hex");
   const token = await registerAndLogin(baseUrl, `${emailPrefix}-${suffix}@example.com`, "Password123");
@@ -211,7 +236,7 @@ test("POST /job-match/:jobId/resume/:resumeId scores a strong candidate as a hig
     const jobId = jobBody.jobDescription.jobId;
 
     try {
-      await withFakeAIProvider(STRONG_RESUME_FACTS, MATCHING_JOB_REQUIREMENTS, async () => {
+      await withFakeAIProvider(STRONG_RESUME_FACTS, MATCHING_JOB_REQUIREMENTS, STRONG_SKILL_MATCH, async () => {
         const response = await fetch(`${baseUrl}/api/v1/job-match/${jobId}/resume/${resumeId}`, {
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },
@@ -265,7 +290,7 @@ test("POST /job-match/:jobId/resume/:resumeId scores an unrelated candidate as a
     const jobId = jobBody.jobDescription.jobId;
 
     try {
-      await withFakeAIProvider(WEAK_RESUME_FACTS, MATCHING_JOB_REQUIREMENTS, async () => {
+      await withFakeAIProvider(WEAK_RESUME_FACTS, MATCHING_JOB_REQUIREMENTS, WEAK_SKILL_MATCH, async () => {
         const response = await fetch(`${baseUrl}/api/v1/job-match/${jobId}/resume/${resumeId}`, {
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },

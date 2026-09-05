@@ -1,9 +1,14 @@
-// Deterministic, explainable job-match scoring. The AI layer only extracts
-// facts (resume skills/education/experience via resumeAnalysis.service.js,
-// and job requirements via jobMatch.service.js); every number here is
-// computed from those facts by the backend, so the same input always
-// produces the same match percentage and each category comes with a
-// plain-language reason for its value. Mirrors atsScoring.service.js.
+// Explainable job-match scoring. The AI layer extracts facts (resume
+// skills/education/experience via resumeAnalysis.service.js, job
+// requirements via jobMatch.service.js) and, for the skills category only,
+// a holistic skill-fit evaluation (requestAiSkillMatch in jobMatch.service.js)
+// that reasons about equivalent/related technologies and transferable
+// experience instead of naive one-to-one string matching. Every other
+// category, and the final weighted match percentage, is still computed from
+// those facts by the backend in plain arithmetic -- the AI never returns the
+// overall match percentage or a recommendation directly, and given the same
+// AI-supplied facts this always produces the same result. Mirrors
+// atsScoring.service.js.
 
 const DEGREE_LEVELS = [
   { pattern: /doctor|ph\.?d/i, rank: 5, label: "Doctorate" },
@@ -17,53 +22,38 @@ function clampScore(score) {
   return Math.max(0, Math.min(100, Math.round(score)));
 }
 
-function normalizeSkill(skill) {
-  return skill.toLowerCase().trim();
-}
-
-function skillsMatch(resumeSkill, targetSkill) {
-  const a = normalizeSkill(resumeSkill);
-  const b = normalizeSkill(targetSkill);
-  return a === b || a.includes(b) || b.includes(a);
-}
-
-function findSkillMatches(resumeSkills, targetSkills) {
-  const matched = [];
-  const missing = [];
-  for (const target of targetSkills) {
-    if (resumeSkills.some((resumeSkill) => skillsMatch(resumeSkill, target))) {
-      matched.push(target);
-    } else {
-      missing.push(target);
-    }
-  }
-  return { matched, missing };
-}
-
-function scoreSkills(resumeSkills, requiredSkills, preferredSkills) {
+// Turns the AI's holistic skill-fit evaluation (requestAiSkillMatch, already
+// validated by validateSkillMatchPayload) into this category's score plus
+// the matched/partially-covered/missing skill lists. skillMatchResult is
+// null when the job specified no required or preferred skills at all, in
+// which case the AI is never called for this and the category defaults to
+// neutral, same as before.
+function buildSkillsCategoryResult(skillMatchResult, requiredSkills, preferredSkills) {
   if (requiredSkills.length === 0 && preferredSkills.length === 0) {
     return {
       score: 50,
       explanation: "Job description did not specify explicit required or preferred skills, so this category defaults to a neutral score.",
       matched: [],
       missing: [],
+      partiallyCovered: [],
     };
   }
 
-  const requiredResult = findSkillMatches(resumeSkills, requiredSkills);
-  const preferredResult = findSkillMatches(resumeSkills, preferredSkills);
-
-  const requiredRatio = requiredSkills.length === 0 ? 1 : requiredResult.matched.length / requiredSkills.length;
-  const preferredRatio = preferredSkills.length === 0 ? 1 : preferredResult.matched.length / preferredSkills.length;
-
-  // Required skills weigh far more than preferred within this category.
-  const score = clampScore(requiredRatio * 80 + preferredRatio * 20);
+  const { skillMatchScore, matchedSkills, partiallyCoveredSkills, missingSkills, overallAssessment } = skillMatchResult;
+  const totalJobSkills = requiredSkills.length + preferredSkills.length;
+  // Preferred-skill gaps aren't hard misses -- only genuinely missing
+  // *required* skills are surfaced as "missing", same as the previous
+  // one-to-one matcher's requiredResult.missing-only behavior.
+  const hardMissingSkills = missingSkills.filter((skill) => requiredSkills.includes(skill));
 
   return {
-    score,
-    explanation: `${requiredResult.matched.length}/${requiredSkills.length} required skill(s) and ${preferredResult.matched.length}/${preferredSkills.length} preferred skill(s) found on the resume.`,
-    matched: [...requiredResult.matched, ...preferredResult.matched],
-    missing: requiredResult.missing,
+    score: skillMatchScore,
+    explanation:
+      overallAssessment ||
+      `Holistic AI evaluation matched ${matchedSkills.length} skill(s) and found ${partiallyCoveredSkills.length} related/equivalent skill(s) out of ${totalJobSkills} required/preferred skill(s); ${hardMissingSkills.length} genuine gap(s) identified.`,
+    matched: [...matchedSkills, ...partiallyCoveredSkills.map((entry) => `${entry.requiredSkill} (via ${entry.coveredBy})`)],
+    missing: hardMissingSkills,
+    partiallyCovered: partiallyCoveredSkills,
   };
 }
 
@@ -199,10 +189,23 @@ function buildStrengths(categories, matchedSkills) {
   return strengths;
 }
 
-function buildRecommendations(categories, missingSkills) {
+// Driven by the holistic AI skill evaluation rather than a strict list of
+// exactly-unmatched skill strings: genuine gaps (skillsResult.missing) still
+// prompt a recommendation, but a skill the AI found to be only partially
+// covered surfaces as a targeted "highlight this transferable experience"
+// suggestion carrying the AI's own note, instead of being lumped in as a
+// hard miss.
+function buildRecommendations(categories, skillsResult) {
   const recommendations = [];
-  if (missingSkills.length > 0) {
-    recommendations.push(`Consider gaining or highlighting experience with: ${missingSkills.join(", ")}.`);
+  if (skillsResult.missing.length > 0) {
+    recommendations.push(`Genuine skill gaps with no equivalent experience found: ${skillsResult.missing.join(", ")}.`);
+  }
+  for (const entry of skillsResult.partiallyCovered) {
+    recommendations.push(
+      `"${entry.requiredSkill}" isn't listed directly, but your "${entry.coveredBy}" experience likely transfers${
+        entry.note ? ` -- ${entry.note}` : ""
+      }; consider highlighting this explicitly.`
+    );
   }
   for (const category of categories) {
     if (category.score < 50 && category.key !== "skills") {
@@ -223,13 +226,16 @@ const CATEGORY_DEFINITIONS = [
   { key: "jobRelevance", label: "Overall Job Relevance", weight: 0.1 },
 ];
 
-// The single entry point for turning validated AI-extracted resume facts and
-// job requirements into a final match result. Every category score, the
-// overall weighted percentage, and the matched/missing skill lists are
-// computed here in plain arithmetic -- the AI never supplies a percentage,
-// a match/miss verdict, or a recommendation directly.
-function calculateJobMatch({ resumeText, resumeFacts, jobRequirements }) {
-  const skillsResult = scoreSkills(resumeFacts.skills, jobRequirements.requiredSkills, jobRequirements.preferredSkills);
+// The single entry point for turning validated AI-extracted resume facts,
+// job requirements, and (when the job specifies any skills) the AI's
+// holistic skill-match evaluation into a final match result. The skills
+// category score and its matched/partially-covered/missing lists come from
+// that AI evaluation; every other category, the overall weighted
+// percentage, and the recommendation/strength text are computed here in
+// plain arithmetic -- the AI never supplies the overall match percentage or
+// a recommendation directly.
+function calculateJobMatch({ resumeText, resumeFacts, jobRequirements, skillMatchResult }) {
+  const skillsResult = buildSkillsCategoryResult(skillMatchResult, jobRequirements.requiredSkills, jobRequirements.preferredSkills);
   const experienceResult = scoreExperience(resumeFacts.experience, jobRequirements.minExperienceYears);
   const educationResult = scoreEducation(resumeFacts.education, jobRequirements.educationRequirement);
   const keywordsResult = scoreKeywords(resumeText, jobRequirements.keywords);
@@ -264,7 +270,7 @@ function calculateJobMatch({ resumeText, resumeFacts, jobRequirements }) {
     matchedSkills: skillsResult.matched,
     missingSkills: skillsResult.missing,
     strengths: buildStrengths(breakdown, skillsResult.matched),
-    recommendations: buildRecommendations(breakdown, skillsResult.missing),
+    recommendations: buildRecommendations(breakdown, skillsResult),
   };
 }
 

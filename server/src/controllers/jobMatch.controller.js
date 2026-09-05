@@ -2,7 +2,7 @@ const { findJobDescriptionById } = require("../services/jobDescription.service")
 const { findResumeById } = require("../services/resume.service");
 const { extractResumeText } = require("../services/resumeExtraction.service");
 const { requestAiAnalysis } = require("../services/resumeAnalysis.service");
-const { requestAiJobRequirements, saveJobMatch, listJobMatches } = require("../services/jobMatch.service");
+const { requestAiJobRequirements, requestAiSkillMatch, saveJobMatch, listJobMatches } = require("../services/jobMatch.service");
 const { calculateJobMatch } = require("../services/jobMatchScoring.service");
 const { isValidUUID } = require("../utils/validators");
 const { assertOwned } = require("../utils/ownership");
@@ -26,8 +26,10 @@ function serializeJobMatch(match) {
 
 // Pipeline: verify ownership of both the job description and the resume ->
 // extract resume text -> ask the AI service for structured resume facts
-// (reusing resumeAnalysis.service.js) and job requirements -> score
-// deterministically -> persist -> return the stored result.
+// (reusing resumeAnalysis.service.js) and job requirements -> if the job
+// specifies any required/preferred skills, ask the AI for a holistic
+// skill-fit evaluation between the two -> score deterministically -> persist
+// -> return the stored result.
 async function matchResumeToJob(req, res) {
   const { jobId, resumeId } = req.params;
 
@@ -43,8 +45,18 @@ async function matchResumeToJob(req, res) {
     const resumeFacts = await requestAiAnalysis(resumeText);
     const jobRequirements = await requestAiJobRequirements(job.description);
 
+    const hasJobSkills = jobRequirements.requiredSkills.length > 0 || jobRequirements.preferredSkills.length > 0;
+    const skillMatchResult = hasJobSkills
+      ? await requestAiSkillMatch({
+          resumeSkills: resumeFacts.skills,
+          resumeExperience: resumeFacts.experience,
+          requiredSkills: jobRequirements.requiredSkills,
+          preferredSkills: jobRequirements.preferredSkills,
+        })
+      : null;
+
     const { matchPercentage, breakdown, matchedSkills, missingSkills, strengths, recommendations } =
-      calculateJobMatch({ resumeText, resumeFacts, jobRequirements });
+      calculateJobMatch({ resumeText, resumeFacts, jobRequirements, skillMatchResult });
 
     const match = await saveJobMatch({
       jobId,
