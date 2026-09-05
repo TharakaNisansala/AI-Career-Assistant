@@ -19,6 +19,13 @@ function buildAnalysisUserPrompt(resumeText) {
   "recommendations": ["actionable suggestion 1"]
 }
 
+When building the "skills" array, include every skill, tool, framework, language, or technology the
+candidate has demonstrably used -- not only ones listed under an explicit "Skills" heading. In
+particular, also read any "Projects" section and pull out technologies named in project descriptions
+(for example, "Built a REST API using Node.js and PostgreSQL" should surface "Node.js" and "PostgreSQL"
+as skills even though they only appear in a project description, not a Skills list). Merge everything
+into the single "skills" array without duplicating a skill that's already captured elsewhere.
+
 Resume text:
 """
 ${resumeText}
