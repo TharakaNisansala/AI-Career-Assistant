@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -13,34 +13,29 @@ import { useDashboardData } from "@/hooks/useDashboardData";
 import { formatDateTime } from "@/lib/format";
 
 export function DashboardPage() {
-  const { user } = useAuth();
+  const { user, justRegistered, clearJustRegistered } = useAuth();
   const { data, error, isLoading } = useDashboardData();
-  const location = useLocation();
-  const navigate = useNavigate();
 
-  // Captured once from the one navigate() call RegisterPage.tsx makes right
-  // after a successful registration -- read into local state rather than
-  // derived from location.state on every render, because browsers persist
-  // history.state across a hard reload of the same entry (it isn't cleared
-  // just by refreshing). The effect below strips it from history right
-  // after mount so a later reload of "/" sees no state, which is what
-  // actually makes the "just registered" greeting a one-time, one-navigation
-  // thing instead of something a refresh could resurrect.
-  const [justRegistered] = useState(
-    () => Boolean((location.state as { justRegistered?: boolean } | null)?.justRegistered)
-  );
+  // Captured once into local state rather than read directly from context
+  // on every render, so this component instance keeps showing the
+  // just-registered greeting for its own lifetime even after the effect
+  // below clears the context flag back to false.
+  const [wasJustRegistered] = useState(() => justRegistered);
 
   useEffect(() => {
-    if (justRegistered) {
-      navigate(location.pathname, { replace: true, state: null });
+    if (wasJustRegistered) {
+      clearJustRegistered();
     }
-    // Runs once on mount only -- re-running on every location change would
-    // fight react-router's own history updates.
+    // Runs once on mount only, using the value captured above -- clearing
+    // the context flag here just prevents a later same-session re-visit to
+    // "/" (no page reload) from showing the greeting again.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const firstName = user ? user.name.split(" ")[0] : "";
-  const greeting = justRegistered ? `Welcome${firstName ? `, ${firstName}` : ""}!` : `Welcome Back${firstName ? `, ${firstName}` : ""}`;
+  const greeting = wasJustRegistered
+    ? `Welcome${firstName ? `, ${firstName}` : ""}!`
+    : `Welcome Back${firstName ? `, ${firstName}` : ""}`;
 
   return (
     <div>
