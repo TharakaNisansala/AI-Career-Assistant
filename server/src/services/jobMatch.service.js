@@ -1,6 +1,7 @@
 const pool = require("../config/database");
 const { getCompletion } = require("./ai.service");
 const { validateJobRequirementsPayload } = require("../utils/jobMatchValidation");
+const { validateSkillMatchPayload } = require("../utils/skillMatchValidation");
 
 const JOB_REQUIREMENTS_SYSTEM_PROMPT =
   "You are an expert technical recruiter. Extract structured hiring requirements " +
@@ -39,6 +40,71 @@ async function requestAiJobRequirements(jobDescriptionText) {
   });
 
   return validateJobRequirementsPayload(result.parsedContent);
+}
+
+const SKILL_MATCH_SYSTEM_PROMPT =
+  "You are an expert technical recruiter evaluating how well a candidate's overall skill set and " +
+  "experience holistically covers a job's required and preferred skills. Reason about equivalent or " +
+  "related technologies (for example React.js satisfies React), transferable skills, and seniority " +
+  "implied by the candidate's experience -- do not require an exact string match for every skill. Only " +
+  "report a skill as matched or partially covered if there is genuine, reasonable evidence for it in the " +
+  "candidate's skills or experience; do not invent skills the candidate doesn't have.";
+
+function buildSkillMatchUserPrompt({ resumeSkills, resumeExperience, requiredSkills, preferredSkills }) {
+  const experienceSummary =
+    resumeExperience
+      .map(
+        (entry) =>
+          `- ${entry.title || "Unknown title"} at ${entry.company || "Unknown company"} (${
+            entry.startDate || "?"
+          } - ${entry.endDate || "?"}): ${entry.description || "No description provided."}`
+      )
+      .join("\n") || "No experience entries provided.";
+
+  return `Evaluate this candidate's holistic skill fit against a job's required and preferred skills.
+
+Candidate's listed skills:
+${resumeSkills.length > 0 ? resumeSkills.join(", ") : "None listed."}
+
+Candidate's experience:
+${experienceSummary}
+
+Job's required skills:
+${requiredSkills.length > 0 ? requiredSkills.join(", ") : "None specified."}
+
+Job's preferred skills:
+${preferredSkills.length > 0 ? preferredSkills.join(", ") : "None specified."}
+
+Return structured JSON with exactly these fields:
+{
+  "skillMatchScore": 0,
+  "matchedSkills": ["required or preferred skill names the candidate genuinely satisfies, either exactly or via a clearly equivalent technology"],
+  "partiallyCoveredSkills": [{"requiredSkill": "the job's skill name", "coveredBy": "the candidate's related/equivalent skill or experience", "note": "a short explanation of why this reasonably transfers"}],
+  "missingSkills": ["required or preferred skill names with no reasonable equivalent in the candidate's background"],
+  "overallAssessment": "a short holistic assessment of the candidate's overall fit against these skills, covering seniority and transferable experience"
+}
+
+Every skill name in "matchedSkills", "partiallyCoveredSkills", and "missingSkills" must be one of the job's required or preferred skills listed above -- do not invent new skill names, and do not list the same skill in more than one of those three fields.`;
+}
+
+// Calls the AI service to holistically evaluate the candidate's skill fit --
+// reasoning about equivalent/related technologies and transferable
+// experience rather than the naive substring matching this replaces -- and
+// validates the response before returning it. The AI supplies this one
+// category's score plus which required/preferred skills are matched,
+// partially covered, or genuinely missing; jobMatchScoring.service.js still
+// composes the final weighted match percentage deterministically from this
+// and the other category scores.
+async function requestAiSkillMatch({ resumeSkills, resumeExperience, requiredSkills, preferredSkills }) {
+  const result = await getCompletion({
+    systemPrompt: SKILL_MATCH_SYSTEM_PROMPT,
+    userPrompt: buildSkillMatchUserPrompt({ resumeSkills, resumeExperience, requiredSkills, preferredSkills }),
+    maxTokens: 1024,
+    temperature: 0.2,
+    responseFormat: "json",
+  });
+
+  return validateSkillMatchPayload(result.parsedContent);
 }
 
 async function saveJobMatch({
@@ -84,4 +150,4 @@ async function listJobMatches({ jobId, resumeId, limit, offset }) {
   return { rows: result.rows.map(({ total_count, ...row }) => row), totalItems };
 }
 
-module.exports = { requestAiJobRequirements, saveJobMatch, listJobMatches };
+module.exports = { requestAiJobRequirements, requestAiSkillMatch, saveJobMatch, listJobMatches };

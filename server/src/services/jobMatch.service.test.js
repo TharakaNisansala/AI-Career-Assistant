@@ -8,7 +8,7 @@ const http = require("node:http");
 const pool = require("../config/database");
 const { AIProviderError } = require("./ai/errors");
 const { AIResponseValidationError } = require("../utils/analysisValidation");
-const { requestAiJobRequirements, saveJobMatch } = require("./jobMatch.service");
+const { requestAiJobRequirements, requestAiSkillMatch, saveJobMatch } = require("./jobMatch.service");
 
 // Mirrors resumeAnalysis.service.test.js: a local fake HTTP server standing
 // in for the Anthropic API, so no real API key or network access is needed.
@@ -103,6 +103,90 @@ test("requestAiJobRequirements propagates AI provider failures unchanged", async
     },
     async () => {
       await assert.rejects(() => requestAiJobRequirements("job description text"), AIProviderError);
+    }
+  );
+});
+
+test("requestAiSkillMatch returns the sanitized holistic skill evaluation from a valid AI response", async () => {
+  await withFakeServer(
+    fakeAiTextResponse(
+      JSON.stringify({
+        skillMatchScore: 78,
+        matchedSkills: ["Node.js"],
+        partiallyCoveredSkills: [
+          { requiredSkill: "Angular", coveredBy: "Vue.js", note: "Comparable frontend framework experience." },
+        ],
+        missingSkills: ["Kubernetes"],
+        overallAssessment: "Strong backend fundamentals with one clear gap.",
+      })
+    ),
+    async () => {
+      const result = await requestAiSkillMatch({
+        resumeSkills: ["Node.js", "Vue.js"],
+        resumeExperience: [],
+        requiredSkills: ["Node.js", "Angular", "Kubernetes"],
+        preferredSkills: [],
+      });
+      assert.equal(result.skillMatchScore, 78);
+      assert.deepEqual(result.matchedSkills, ["Node.js"]);
+      assert.deepEqual(result.partiallyCoveredSkills, [
+        { requiredSkill: "Angular", coveredBy: "Vue.js", note: "Comparable frontend framework experience." },
+      ]);
+      assert.deepEqual(result.missingSkills, ["Kubernetes"]);
+    }
+  );
+});
+
+test("requestAiSkillMatch throws AIResponseValidationError when the AI does not return JSON", async () => {
+  await withFakeServer(fakeAiTextResponse("Sure, here's my assessment in plain prose."), async () => {
+    await assert.rejects(
+      () =>
+        requestAiSkillMatch({
+          resumeSkills: ["Node.js"],
+          resumeExperience: [],
+          requiredSkills: ["Node.js"],
+          preferredSkills: [],
+        }),
+      AIResponseValidationError
+    );
+  });
+});
+
+test("requestAiSkillMatch throws AIResponseValidationError when the AI returns JSON with no usable signal", async () => {
+  await withFakeServer(
+    fakeAiTextResponse(JSON.stringify({ matchedSkills: [], partiallyCoveredSkills: [], missingSkills: [] })),
+    async () => {
+      await assert.rejects(
+        () =>
+          requestAiSkillMatch({
+            resumeSkills: [],
+            resumeExperience: [],
+            requiredSkills: ["Node.js"],
+            preferredSkills: [],
+          }),
+        AIResponseValidationError
+      );
+    }
+  );
+});
+
+test("requestAiSkillMatch propagates AI provider failures unchanged", async () => {
+  await withFakeServer(
+    (req, res) => {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: { message: "internal provider failure" } }));
+    },
+    async () => {
+      await assert.rejects(
+        () =>
+          requestAiSkillMatch({
+            resumeSkills: ["Node.js"],
+            resumeExperience: [],
+            requiredSkills: ["Node.js"],
+            preferredSkills: [],
+          }),
+        AIProviderError
+      );
     }
   );
 });
