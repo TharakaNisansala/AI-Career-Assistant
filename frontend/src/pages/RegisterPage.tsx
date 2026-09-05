@@ -47,7 +47,11 @@ export function RegisterPage() {
     setIsSubmitting(true);
     try {
       await register(name, email, password);
-      navigate("/", { replace: true, state: { justRegistered: true } });
+      // The just-registered flag itself now lives in AuthContext (set
+      // atomically with the user, so it survives GuestRoute's own redirect
+      // racing ahead of this one) -- this navigate is just the normal
+      // fast-path off the register form.
+      navigate("/", { replace: true });
     } catch (error) {
       setFormError(error instanceof ApiRequestError ? error.message : "Unable to register");
     } finally {
