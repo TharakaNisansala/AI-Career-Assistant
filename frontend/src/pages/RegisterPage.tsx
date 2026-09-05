@@ -44,7 +44,7 @@ export function RegisterPage() {
     setIsSubmitting(true);
     try {
       await register(name, email, password);
-      navigate("/", { replace: true });
+      navigate("/", { replace: true, state: { justRegistered: true } });
     } catch (error) {
       setFormError(error instanceof ApiRequestError ? error.message : "Unable to register");
     } finally {
