@@ -49,7 +49,7 @@ export function LoginPage() {
   }
 
   return (
-    <AuthLayout title="Welcome back" subtitle="Log in to continue to your dashboard">
+    <AuthLayout title="Welcome Back" subtitle="Log in to continue to your dashboard">
       <form className="flex flex-col gap-4" onSubmit={handleSubmit} noValidate>
         {formError && <Alert variant="error">{formError}</Alert>}
 

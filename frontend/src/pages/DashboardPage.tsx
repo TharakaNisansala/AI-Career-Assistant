@@ -40,7 +40,7 @@ export function DashboardPage() {
   }, []);
 
   const firstName = user ? user.name.split(" ")[0] : "";
-  const greeting = justRegistered ? `Welcome${firstName ? `, ${firstName}` : ""}!` : `Welcome back${firstName ? `, ${firstName}` : ""}`;
+  const greeting = justRegistered ? `Welcome${firstName ? `, ${firstName}` : ""}!` : `Welcome Back${firstName ? `, ${firstName}` : ""}`;
 
   return (
     <div>
